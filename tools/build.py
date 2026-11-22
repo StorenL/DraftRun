@@ -458,15 +458,15 @@ def main():
     for p in posts:
         body_html, toc = md_to_html(p["_body"])
         out = PUBLIC / "posts" / f"{p['slug']}.html"
-        out.write_text(render_post(p, body_html, toc), encoding="utf-8")
+        out.write_text(render_post(p, body_html, toc), encoding="utf-8", newline="\n")
         print(f"  posts/{p['slug']}.html  （{len(toc)} 个目录项）")
 
     for f in STATIC.iterdir():
         (PUBLIC / f.name).write_bytes(f.read_bytes())
 
-    (PUBLIC / "index.html").write_text(render_index(posts), encoding="utf-8")
-    (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8")
-    (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8")
+    (PUBLIC / "index.html").write_text(render_index(posts), encoding="utf-8", newline="\n")
+    (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
+    (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8", newline="\n")
     print(f"  index.html / sitemap.xml / rss.xml  （共 {len(posts)} 篇）")
 
 
