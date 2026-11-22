@@ -5,19 +5,15 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sat, 21 Nov 2026 16:41:11 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 22 Nov 2026 15:23:49 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
-
     <item>
       <title>把博客当成排版实验</title>
-      <link>https://draft.run/post</link>
-      <guid isPermaLink="true">https://draft.run/post</guid>
-      <pubDate>Sat, 21 Nov 2026 09:00:00 +0800</pubDate>
+      <link>https://draft.run/posts/typography-experiment</link>
+      <guid isPermaLink="true">https://draft.run/posts/typography-experiment</guid>
+      <pubDate>Sat, 21 Nov 2026 09:00:00 +0000</pubDate>
       <category>排版</category>
-      <category>CSS</category>
-      <description><![CDATA[
-        <p>与其写“Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去：字、行、代码、卡片、图、交互。这既是第一篇，也是这套排版的验收报告。</p>
-      ]]></description>
+      <description><![CDATA[<p>与其写一段 “Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去。这既是第一篇，也是这套排版的验收报告。</p>]]></description>
     </item>
   </channel>
 </rss>

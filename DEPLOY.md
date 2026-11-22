@@ -1,87 +1,115 @@
-# 部署清单 · draft.run
+# 潦草地 · 构建与部署
 
-站点是纯静态的：4 个页面 + 1 个样式表 + 1 个 SVG，没有构建步骤，没有依赖。
+纯静态站，没有运行时依赖。构建脚本只用 Python 标准库。
 
 ## 目录
 
 ```
-deploy/
-  wrangler.toml      Cloudflare Workers 配置
-  DEPLOY.md
-  .gitattributes
-  public/            这里面的东西才会被发布
-    index.html       首页
-    post.html        文章页
-    404.html         找不到页面
-    style.css        全部样式
-    favicon.svg      站点图标
-    rss.xml          订阅源
-    robots.txt
-    sitemap.xml
-    _headers         响应头配置
+content/posts/*.md    你写的文章（唯一需要手写的东西）
+templates/            页面骨架
+  index.html          首页（含 <!--POSTS--> 标记）
+  post.html           文章页（{{占位符}}）
+static/               原样复制的资源
+  style.css  favicon.svg  robots.txt  _headers  404.html
+tools/build.py        构建脚本
+public/               构建产物（不要手改）
+wrangler.toml         Cloudflare Workers 配置
 ```
 
-为什么用 `public/`：发布目录指向它，仓库里的 `DEPLOY.md`、`wrangler.toml` 就不会被当成静态文件公开。
+`wrangler.toml` 只发布 `public/`，所以 md、模板、脚本都不会被公开。
 
-## 一、推到 GitHub
+## 写一篇文章
+
+### 1. 新建
 
 ```bash
-cd deploy
-git init
-git add .
-git commit -m "init"
-git branch -M main
-git remote add origin git@github.com:<你的账号>/draft-run.git
-git push -u origin main
+python tools/build.py --new
 ```
 
-仓库里只放 `deploy/` 里的东西。**不要把 v2/v3/v4/v5、tools、preview 推上去**，那些是草稿。
+按提示填文件名、标题、副标题、分类。它会在 `content/posts/` 下建一个 md。
 
-## 二、Cloudflare Pages
+也可以直接手写一个 `content/posts/我的文章.md`：
 
-1. Cloudflare 控制台 → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-2. 选刚才那个仓库
-3. 构建设置：
-   - Framework preset: **None**
-   - Build command: **留空**
-   - Build output directory: **`/`**
-4. Save and Deploy
+```markdown
+---
+title: 没有框架，怎么做搜索和标签
+dek: 手写一个 300 行的静态站索引
+excerpt: 首页列表里显示的摘要，比 dek 长一点
+date: 2026-12-01
+minutes: 7
+tag: 工具
+note: 文章末尾那句署名
+---
 
-首次部署约 30 秒，会给你一个 `xxx.pages.dev` 的临时地址，先验一遍。
+正文。
 
-## 三、绑自己的域名
+## 小节标题
 
-`draft.run` 是根域，**必须把 DNS 托管到 Cloudflare**（根域不能设 CNAME）。
+段落之间空一行。
+```
 
-1. Cloudflare → **Add a site** → 输入 `draft.run` → 选 **Free**
-2. 它扫描现有 DNS 并导入。**先自己导一份原记录备份**，重点确认 MX（邮件）和 TXT（验证记录）
-3. 拿到两个 NS，形如 `xxx.ns.cloudflare.com`
-4. 去域名注册商改 NS
-5. 等状态变 **Active**（几分钟到 24 小时）
-6. Pages 项目 → **Custom domains** → 添加 `draft.run` 和 `www.draft.run`
-7. SSL/TLS 模式确认是 **Full (strict)**
+文件名就是 URL：`no-framework-search.md` → `/posts/no-framework-search`。
 
-## 四、上线后检查
+### 2. 支持的语法
 
-- [ ] `https://draft.run/` 能开
-- [ ] `https://www.draft.run/` 能开（或在 Rules 里设 301 跳到裸域）
-- [ ] `https://draft.run/rss.xml` 返回 XML，不是 404
-- [ ] `https://draft.run/不存在` 返回 404 页面
-- [ ] 手机开一次，暗色模式切一下
-- [ ] 用 [PageSpeed Insights](https://pagespeed.web.dev/) 跑一次
+| 写法 | 效果 |
+|---|---|
+| `## 标题` | 二级标题，自动进目录 |
+| `## 标题 {#custom-id}` | 指定锚点，不进目录排序 |
+| `**粗体**`、`*斜体*`、`` `行内代码` `` | 行内标记 |
+| `[文字](链接)` | 链接 |
+| `> 引用` | 引用块，空行分段 |
+| `- 列表` / `1. 列表` | 列表 |
+| `表：说明文字` 换行接 `\| 表格 \|` | 带标题的表格 |
+| ```` ```css css/tokens.css ```` | 代码块：语言 + 文件名 |
+| 直接写 `<div class="demo">…</div>` | 原样输出，用来放 demo、callout |
 
-## 五、每次更新
+代码块的语言决定高亮规则，目前内置 `css` `js` `kotlin` `java` `bash`。
+
+### 3. 构建
 
 ```bash
-git add .
-git commit -m "新文章"
+python tools/build.py
+```
+
+它会：
+
+- 把 md 渲染成 `public/posts/<slug>.html`
+- 重新生成首页列表（按日期倒序）
+- 重新生成 `sitemap.xml`、`rss.xml`
+- 把所有 `static/` 复制进 `public/`
+
+**每次都是全量重建**，`public/` 会被先清空，所以删掉一篇文章也安全。
+
+### 4. 发布
+
+```bash
+git add -A
+git commit -m "新文章：xxx"
 git push
 ```
 
-Cloudflare 自动构建，几十秒后生效。
+Cloudflare 自动构建，几十秒后上线。
+
+> `public/` 是提交进仓库的。改完 md 一定要跑一次 `python tools/build.py` 再提交，否则线上还是旧内容。
+
+## 部署
+
+Cloudflare Workers + Static Assets，从 GitHub 自动构建。
+
+| 设置 | 值 |
+|---|---|
+| Framework preset | None |
+| Build command | 空 |
+| Deploy command | `npx wrangler deploy` |
+| 入口配置 | `wrangler.toml` 的 `assets.directory = "./public"` |
+
+域名 `draft.run` 托管在 Cloudflare，Worker 里绑 Custom Domain。
 
 ## 注意
 
-- **`.run` 能不能备案**：需要查工信部批复列表。如果不在列表里，就和我之前说的 `.dev` 一样，只能海外托管，国内访问会绕路。
-- **缓存**：`_headers` 里 CSS 设了 `immutable` + 一年。**以后改 `style.css` 必须改文件名**（比如 `style.v2.css`），否则老访客会一直用旧缓存。改文件名记得同步改两个 HTML 里的 `<link>`。
-- **换域名**：如果以后换域名，要改的地方是 `rss.xml`（4 处）、两个页面的 `canonical` 和 `og:url`、`sitemap.xml`、`robots.txt`，共 5 个文件。
+**缓存**：`_headers` 里 CSS 是 10 分钟 + `stale-while-revalidate`。改样式最多 10 分钟生效，不用改文件名。
+
+**HTML 不缓存**：`max-age=0, must-revalidate`，所以文章改完立刻能看到。
+
+**BOM**：所有文件必须是 UTF-8 **无 BOM**。`_headers` 带 BOM 会让部署直接失败（`Expected a path before headers`）。构建脚本用 `encoding="utf-8"` 写出，符合要求；但如果你用别的编辑器手改 `static/` 里的文件，注意别存成「UTF-8 with BOM」。
