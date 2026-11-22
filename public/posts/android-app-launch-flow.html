@@ -1063,5 +1063,35 @@
         spy();
       })();
     </script>
+    <script>
+      // 目录高亮：跟随滚动标出当前小节
+      (function () {
+        var links = Array.prototype.slice.call(
+          document.querySelectorAll(".post-aside .toc a")
+        );
+        if (!links.length || !("IntersectionObserver" in window)) return;
+        var byId = {};
+        links.forEach(function (a) {
+          byId[a.getAttribute("href").slice(1)] = a;
+        });
+        var current = null;
+        var obs = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              var a = byId[e.target.id];
+              if (!a || a === current) return;
+              if (current) current.classList.remove("is-active");
+              a.classList.add("is-active");
+              current = a;
+            });
+          },
+          { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
+        );
+        document.querySelectorAll(".prose h2[id]").forEach(function (h) {
+          obs.observe(h);
+        });
+      })();
+    </script>
   </body>
 </html>
