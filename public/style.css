@@ -1042,9 +1042,6 @@ a {
 .prose > * + * {
   margin-top: 1.15em;
 }
-.prose p {
-  margin: 0;
-}
 .prose h2 {
   position: relative;
   margin-top: 2.3em;
@@ -1561,4 +1558,29 @@ a {
   .sun-rays {
     animation: none;
   }
+}
+/* 文章内的图 */
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.6em auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+}
+.prose p > img:only-child {
+  margin-block: 1.8em;
+}
+/* 行内代码：正文里区分出「这是标识符」 */
+.prose :not(pre) > code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  padding: 0.12em 0.36em;
+  border-radius: 5px;
+  background: var(--code-inline);
+  color: var(--code-ink);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  white-space: break-spaces;
 }

@@ -136,6 +136,9 @@ def highlight(code: str, lang: str) -> list:
     return out
 
 
+HIGHLIGHT_LANGS = {'css', 'scss', 'js', 'ts', 'javascript', 'kotlin', 'java', 'bash', 'sh'}
+
+
 def code_block(code: str, info: str) -> str:
     parts = (info or "").strip().split()
     lang = parts[0] if parts else ""
@@ -143,7 +146,14 @@ def code_block(code: str, info: str) -> str:
     lang_label = lang.upper() if lang else "CODE"
     file_html = (f'<span class="code__file">{html.escape(filename)}</span>'
                  if filename else '<span class="code__file"></span>')
-    lines = "\n".join(highlight(code.rstrip("\n"), lang))
+    plain = lang not in HIGHLIGHT_LANGS
+    if plain:
+        lines = "\n".join(
+            '<span class="line">' + html.escape(raw) + '</span>'
+            for raw in code.rstrip("\n").split("\n")
+        )
+    else:
+        lines = "\n".join(highlight(code.rstrip("\n"), lang))
     return (
         '<div class="code">\n'
         '              <div class="code__bar">\n'
@@ -253,6 +263,12 @@ def md_to_html(body: str):
         cap = re.match(r"^表[：:]\s*(.+)$", line.strip())
         if cap:
             blocks.append(("caption", cap.group(1).strip()))
+            i += 1
+            continue
+
+        # 水平线
+        if re.match(r"^---+\s*$", line):
+            blocks.append("<hr />")
             i += 1
             continue
 
@@ -508,7 +524,10 @@ def main():
         print(f"  posts/{p['slug']}.html  （{len(toc)} 个目录项）")
 
     for f in STATIC.iterdir():
-        (PUBLIC / f.name).write_bytes(f.read_bytes())
+        if f.is_dir():
+            shutil.copytree(f, PUBLIC / f.name, dirs_exist_ok=True)
+        else:
+            (PUBLIC / f.name).write_bytes(f.read_bytes())
 
     (PUBLIC / "index.html").write_text(render_index(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
