@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>潦草地</title>
+    <link>https://draft.run/</link>
+    <description>写在草稿纸上的技术笔记：前端、排版与工具。</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 21 Nov 2026 16:41:11 +0000</lastBuildDate>
+    <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
+
+    <item>
+      <title>把博客当成排版实验</title>
+      <link>https://draft.run/posts/typography-experiment.html</link>
+      <guid isPermaLink="true">https://draft.run/posts/typography-experiment.html</guid>
+      <pubDate>Sat, 21 Nov 2026 09:00:00 +0800</pubDate>
+      <category>排版</category>
+      <category>CSS</category>
+      <description><![CDATA[
+        <p>与其写“Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去：字、行、代码、卡片、图、交互。这既是第一篇，也是这套排版的验收报告。</p>
+      ]]></description>
+    </item>
+  </channel>
+</rss>

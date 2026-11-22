@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-CN" data-js="on">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>潦草地 · 写给前端的手艺人笔记</title>
+    <meta
+      name="description"
+      content="潦草地是一个关于前端、排版与工具的技术博客。写在草稿纸上，想清楚了才誊清。"
+    />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("lc-theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="canonical" href="https://draft.run/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="潦草地" />
+    <meta property="og:title" content="潦草地 · 写给前端的手艺人笔记" />
+    <meta property="og:description" content="关于前端、排版与工具的技术博客。写在草稿纸上，想清楚了才誊清。" />
+    <meta property="og:url" content="https://draft.run/" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <header class="header" data-header>
+      <div class="shell">
+        <a class="brand" href="index.html" aria-label="潦草地">
+          潦草地
+          <svg class="brand__scratch" viewBox="0 0 90 10" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M2 6q11-5 22 0t22 0t22 0t20 0"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+            />
+          </svg>
+        </a>
+
+        <nav class="nav" aria-label="主导航">
+          <a href="#writing">文章</a>
+          <a href="#categories">分类</a>
+          <a href="#about">关于</a>
+        </nav>
+
+        <div class="header__tools">
+          <button class="icon-btn" type="button" aria-label="搜索">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m19.5 19.5-4-4" />
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" data-theme-toggle aria-label="切换到暗色">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" />
+            </svg>
+          </button>
+          <a class="icon-btn" href="rss.xml" aria-label="RSS">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ================= Hero ================= -->
+      <section class="hero">
+        <div class="hero__sky" aria-hidden="true">
+          <svg class="clouds" viewBox="0 0 1440 300" preserveAspectRatio="none">
+            <g fill="#ffffff" opacity=".55">
+              <ellipse cx="150" cy="250" rx="330" ry="120" />
+              <ellipse cx="620" cy="236" rx="380" ry="130" />
+              <ellipse cx="1120" cy="248" rx="360" ry="126" />
+              <ellipse cx="1440" cy="260" rx="280" ry="110" />
+            </g>
+            <g fill="#ffffff" opacity=".85">
+              <ellipse cx="300" cy="286" rx="360" ry="110" />
+              <ellipse cx="860" cy="278" rx="400" ry="120" />
+              <ellipse cx="1380" cy="288" rx="340" ry="104" />
+            </g>
+            <g fill="#ffffff">
+              <rect y="262" width="1440" height="38" />
+            </g>
+          </svg>
+        </div>
+
+        <div class="shell hero__grid">
+          <h1 class="sr-only">潦草地 · 写在草稿纸上的技术笔记</h1>
+
+          <div class="hero__lead">
+            <p class="hero__wordmark" aria-hidden="true">潦草地</p>
+
+            <div class="promo">
+              <p>
+                ✏️ <strong>这里是草稿本。</strong>
+                我在这里记下排版、CSS、工具，和那些看起来很小、用起来很大的东西。
+              </p>
+              <p>
+                文章都是先潦草地写在纸上，再誊到这里。没有日更，没有追热点——想清楚了才写，写完改三遍再发。
+              </p>
+              <a class="promo__btn" href="post.html">
+                翻开第一篇
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
+                  </svg>
+                </span>
+              </a>
+            </div>
+          </div>
+
+          <div class="hero__art" aria-hidden="true">
+            <svg class="scene" viewBox="0 0 560 480" fill="none">
+              <defs>
+                <filter id="rough" x="-12%" y="-12%" width="124%" height="124%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="3" seed="7" result="n" />
+                  <feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+              </defs>
+              <g filter="url(#rough)" stroke="var(--doodle-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <circle class="sun" cx="104" cy="100" r="40" fill="var(--sun)" />
+                <g class="sun-rays" stroke-width="3.4">
+                  <path d="M156 100h14" /><path d="M146.1 130.6l11.3 8.2" />
+                  <path d="M120.1 149.4l4.3 13.4" /><path d="M87.9 149.4l-4.3 13.4" />
+                  <path d="M61.9 130.6l-11.3 8.2" /><path d="M52 100h-14" />
+                  <path d="M61.9 69.4l-11.3-8.2" /><path d="M87.9 50.6l-4.3-13.4" />
+                  <path d="M120.1 50.6l4.3-13.4" /><path d="M146.1 69.4l11.3-8.2" />
+                </g>
+                <path d="M196 116c2-13 12-21 24-17 5-13 21-17 31-8 12-7 27-1 27 11 13 1 21 8 21 16" />
+                <path d="M196 116c-4 9 1 14 7 14h89" />
+                <g class="plane">
+                  <path d="M398 122l70-44-34 54-16-20z" fill="var(--doodle-paper)" />
+                  <path d="M398 122l16 10 10-20" stroke-width="2.6" />
+                </g>
+                <path class="flight" d="M300 322c-110 2-180-72-132-146 42-66 162-80 240-70" stroke-dasharray="10 14" stroke-width="2.6" stroke="var(--muted)" />
+                <path d="M258 396l34 8 26-10 30 8" stroke-width="2.4" opacity=".55" />
+                <path d="M262 408l30 7 24-9 28 7" stroke-width="2.4" opacity=".35" />
+                <g class="blob">
+                  <path d="M292 330c8-34 44-46 70-34 30 14 38 44 26 70-12 26-44 36-70 26-24-9-34-36-26-62z" fill="var(--doodle-ink)" />
+                  <circle cx="322" cy="336" r="6" fill="var(--doodle-paper)" stroke="none" />
+                  <circle cx="360" cy="340" r="6" fill="var(--doodle-paper)" stroke="none" />
+                  <path d="M330 362q8 9 16 0" stroke="var(--doodle-paper)" stroke-width="3.4" fill="none" />
+                  <path d="M300 300q10-12 22-6" stroke="var(--doodle-paper)" stroke-width="2.6" opacity=".55" fill="none" />
+                </g>
+                <g stroke-width="2.6" stroke="var(--accent)">
+                  <path d="M150 372v26M138 385h24M142 377l16 16M158 377l-16 16" />
+                </g>
+                <g stroke-width="2.6" stroke="var(--doodle-ink)" opacity=".5">
+                  <path d="M62 286q10-14 20 0t20 0t20 0" />
+                  <path d="M470 300l6 18 18 2-14 12 4 18-14-11-15 11 4-18-13-12 18-2z" />
+                  <circle cx="486" cy="404" r="3" /><circle cx="70" cy="416" r="3" />
+                </g>
+                <g stroke-width="2.4" stroke="var(--muted)" fill="none">
+                  <path d="M406 268c14-6 24-4 30 4" /><path d="M430 266l8 6-10 4" />
+                </g>
+                <text x="446" y="272" fill="var(--muted)" font-family="Ink Free, Segoe Print, cursive" font-size="19" stroke="none" transform="rotate(-7 446 272)">draft 07</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+      <!-- ================= 主体两栏 ================= -->
+      <div class="main">
+        <div class="shell main__grid">
+          <div id="writing">
+            <h2 class="label">Articles and tutorials</h2>
+
+            <article class="post-item">
+              <h3><a href="post.html">把博客当成排版实验</a></h3>
+              <p class="post-item__sub">一次把设计系统摊开、逐项验收的尝试</p>
+              <p class="post-item__excerpt">
+                与其写一段 “Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去：字、行、代码、卡片、图、交互。这既是第一篇，也是这套排版的验收报告。
+              </p>
+              <a class="readmore" href="post.html">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
+
+            <article class="post-item">
+              <h3>没有框架，怎么做搜索和标签</h3>
+              <p class="post-item__sub">手写一个 300 行的静态站索引</p>
+              <p class="post-item__excerpt">
+                不用 Pagefind，不用 Algolia。把文章拆成 JSON、在构建前生成索引、用 80 行原生 JS 过滤——顺便看看浏览器的 IndexedDB 到底能快多少。
+              </p>
+              <span class="readmore" style="color: #9aa0ab">写作中</span>
+            </article>
+
+            <article class="post-item">
+              <h3>把颜色调对，只需要三个变量</h3>
+              <p class="post-item__sub">为什么你的暗色模式总是显得脏</p>
+              <p class="post-item__excerpt">
+                大多数暗色主题是把亮色反转一遍，结果所有东西都发灰。真正决定观感的是背景的明度、文字的对比度，以及中间那一层“表面色”的位置。
+              </p>
+              <span class="readmore" style="color: #9aa0ab">写作中</span>
+            </article>
+            <div class="showmore-wrap">
+              <button class="showmore" type="button">
+                Show more
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 9l7 7 7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <aside class="sidebar">
+            <section id="categories">
+              <h2 class="label">Browse by category</h2>
+              <ul class="chips">
+                <li><a href="#writing">排版</a></li>
+                <li><a href="#writing">CSS</a></li>
+                <li><a href="#writing">动画</a></li>
+                <li><a href="#writing">工具</a></li>
+                <li><a href="#writing">性能</a></li>
+                <li><a href="#writing">写作</a></li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 class="label">Popular content</h2>
+              <ul class="popular">
+                <li>
+                  <a href="post.html">
+                    <span class="arrow-grow" aria-hidden="true">
+                    <svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" />
+                      <path class="head" d="M7.5 3L15 9l-7.5 6" />
+                    </svg>
+                  </span>
+                    <span>把博客当成排版实验</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#writing">
+                    <span class="arrow-grow" aria-hidden="true">
+                    <svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" />
+                      <path class="head" d="M7.5 3L15 9l-7.5 6" />
+                    </svg>
+                  </span>
+                    <span>行宽为什么不能超过 40 字</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#writing">
+                    <span class="arrow-grow" aria-hidden="true">
+                    <svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" />
+                      <path class="head" d="M7.5 3L15 9l-7.5 6" />
+                    </svg>
+                  </span>
+                    <span>代码块不是插图</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="#writing">
+                    <span class="arrow-grow" aria-hidden="true">
+                    <svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" />
+                      <path class="head" d="M7.5 3L15 9l-7.5 6" />
+                    </svg>
+                  </span>
+                    <span>卡片的三种语气</span>
+                  </a>
+                </li>
+              </ul>
+            </section>
+
+            <section id="about">
+              <h2 class="label">About this site</h2>
+              <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #4c5361">
+                没有算法推荐，没有信息流，没有弹窗。整站手写 HTML 和 CSS，零构建、零依赖、零第三方脚本。
+              </p>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <svg class="footer__cloud" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 60V38 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0V60Z" fill="currentColor" />
+      </svg>
+      <div class="shell">
+        <p class="footer__copy">© 2026 潦草地</p>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var themeBtn = document.querySelector("[data-theme-toggle]");
+        function syncTheme() {
+          if (!themeBtn) return;
+          var dark = document.documentElement.dataset.theme === "dark";
+          themeBtn.setAttribute("aria-label", dark ? "切换到亮色" : "切换到暗色");
+        }
+        if (themeBtn) {
+          syncTheme();
+          themeBtn.addEventListener("click", function () {
+            var next =
+              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+            document.documentElement.dataset.theme = next;
+            try {
+              localStorage.setItem("lc-theme", next);
+            } catch (e) {}
+            syncTheme();
+          });
+        }
+
+        var header = document.querySelector("[data-header]");
+        function onScroll() {
+          header.classList.toggle("is-solid", window.scrollY > 20);
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        var items = document.querySelectorAll("[data-reveal]");
+        if ("IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add("is-in");
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { rootMargin: "0px 0px -10% 0px" }
+          );
+          items.forEach(function (el) {
+            io.observe(el);
+          });
+        } else {
+          items.forEach(function (el) {
+            el.classList.add("is-in");
+          });
+        }
+      })();
+    </script>
+    <script>
+    // 标题下划线从鼠标进入点向两侧展开
+    document.querySelectorAll(".post-item h3 a").forEach(function (a) {
+      a.addEventListener("pointerenter", function (e) {
+        var r = a.getBoundingClientRect();
+        var ox = ((e.clientX - r.left) / r.width) * 100;
+        a.style.setProperty("--ox", Math.max(0, Math.min(100, ox)) + "%");
+      });
+    });
+  </script></body>
+</html>
