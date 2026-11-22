@@ -1,0 +1,7 @@
+name = "draftrun"
+compatibility_date = "2026-11-22"
+
+# 只把 public/ 当静态资源发布，仓库里的文档和配置不会被公开
+[assets]
+directory = "./public"
+not_found_handling = "404-page"

@@ -6,16 +6,22 @@
 
 ```
 deploy/
-  index.html      首页
-  post.html       文章页
-  404.html        找不到页面
-  style.css       全部样式
-  favicon.svg     站点图标
-  rss.xml         订阅源
-  robots.txt
-  sitemap.xml
-  _headers        Cloudflare Pages 的响应头配置
+  wrangler.toml      Cloudflare Workers 配置
+  DEPLOY.md
+  .gitattributes
+  public/            这里面的东西才会被发布
+    index.html       首页
+    post.html        文章页
+    404.html         找不到页面
+    style.css        全部样式
+    favicon.svg      站点图标
+    rss.xml          订阅源
+    robots.txt
+    sitemap.xml
+    _headers         响应头配置
 ```
+
+为什么用 `public/`：发布目录指向它，仓库里的 `DEPLOY.md`、`wrangler.toml` 就不会被当成静态文件公开。
 
 ## 一、推到 GitHub
 
