@@ -287,5 +287,57 @@
         a.style.setProperty("--ox", Math.max(0, Math.min(100, ox)) + "%");
       });
     });
+  </script>  <script>
+    // 箭头"弹一下"：两段弹簧，但第二段从"当前实时值"起飞，
+    // 而不是从预设的终点重来——这是 Motion 的做法，也是连贯感的关键。
+    (function () {
+      if (!document.body.animate) return;
+
+      var SPRING =
+        "linear(0, 0.1407 4.43%, 0.9383 16.72%, 1.0774 20.43%, 1.1493 24.31%," +
+        " 1.1629 26.95%, 1.1536 29.93%, 1.0168 43.09%, 0.9766 51%," +
+        " 1.0033 76.88%, 1)";
+      var REST = "scale(1, 1)";
+      var STRETCHED = "scale(1.26, 0.76)";
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+      function clear(svg) {
+        svg.getAnimations().forEach(function (a) { a.cancel(); });
+      }
+
+      function boop(svg) {
+        clear(svg);
+
+        svg.animate(
+          [{ transform: REST }, { transform: STRETCHED }],
+          { duration: 300, easing: SPRING, fill: "forwards" }
+        );
+
+        // 在拉伸还没收敛时就开始回弹：读当时的真实变换作为起点，
+        // 这样既没有停顿，也不会因为跳回预设值而闪一下。
+        window.setTimeout(function () {
+          var now = getComputedStyle(svg).transform;
+          var back = svg.animate(
+            [{ transform: now === "none" ? REST : now }, { transform: REST }],
+            { duration: 420, easing: SPRING, fill: "forwards" }
+          );
+          back.finished
+            .then(function () { clear(svg); })
+            .catch(function () {});
+        }, 170);
+      }
+
+      Array.prototype.forEach.call(
+        document.querySelectorAll(".popular a"),
+        function (link) {
+          var svg = link.querySelector(".arrow-grow svg");
+          if (!svg) return;
+          link.addEventListener("pointerenter", function () {
+            if (reduced.matches) return;
+            boop(svg);
+          });
+        }
+      );
+    })();
   </script></body>
 </html>

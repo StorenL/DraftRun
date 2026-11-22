@@ -223,7 +223,7 @@ a {
 }
 .wrap {
   width: 100%;
-  max-width: 760px;
+  max-width: var(--shell);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -269,6 +269,8 @@ a {
 }
 
 .header .shell {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 40px;
@@ -773,25 +775,32 @@ a {
   height: 18px;
   overflow: visible;
   color: var(--ink);
+  transform-origin: 1px 50%;
   transition: color 0.2s var(--ease-out);
 }
 .arrow-grow .shaft {
   transform: scaleX(1);
   transform-origin: 1px 9px;
-  transition: transform 0.34s var(--ease);
+  transition: transform 0.5s var(--ease);
 }
 .arrow-grow .head {
   transform: translateX(0);
-  transition: transform 0.34s var(--ease);
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.5s var(--ease);
 }
 .popular a:hover .arrow-grow svg {
   color: var(--link);
 }
-.popular a:hover .arrow-grow .shaft {
-  transform: scaleX(1.28);
+/* 整支箭头一起被拉扯：横向拉长、纵向压扁，描边粗细不变 */
+/* 等价于他文章里的 d 变形，但不需要改几何、也不依赖 Safari 不支持的属性 */
+.arrow-grow svg * {
+  vector-effect: non-scaling-stroke;
 }
-.popular a:hover .arrow-grow .head {
-  transform: translateX(2.9px);
+/* 动画交给 JS 用 Web Animations API 驱动（两段独立的弹簧），
+   CSS 这边只负责变换基准和描边不缩放 */
+.arrow-grow svg {
+  will-change: transform;
 }
 
 /* ==========================================================================
@@ -901,7 +910,7 @@ a {
 .sub__btn svg,
 .showmore svg,
 .promo__btn span svg {
-  transition: transform 0.34s var(--ease);
+  transition: transform 0.5s var(--ease);
 }
 .icon-btn:hover svg {
   transform: scale(1.14);
@@ -924,7 +933,7 @@ a {
    ========================================================================== */
 .wrap {
   width: 100%;
-  max-width: 760px;
+  max-width: var(--shell);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -932,6 +941,7 @@ a {
 .post-head {
   padding-top: calc(var(--header-h) + 46px);
 }
+
 .post-kicker {
   margin: 0 0 14px;
   font-size: 13px;
@@ -1028,9 +1038,17 @@ a {
 }
 
 .post-layout {
-  max-width: 1000px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 264px;
+  gap: 72px;
+  align-items: start;
   padding-top: 34px;
   padding-bottom: 24px;
+}
+.post-aside {
+  position: sticky;
+  top: calc(var(--header-h) + 40px);
+  padding-top: 2px;
 }
 
 /* 正文 */
@@ -1040,18 +1058,7 @@ a {
   color: var(--body-ink);
   text-wrap: pretty;
 }
-/* 文字保持可读行宽，媒体（图/代码/表格/演示）可以更宽 */
-.prose > * {
-  max-width: 43rem;
-  margin-inline: auto;
-}
-.prose > figure,
-.prose > .code,
-.prose > .demo,
-.prose > .callout,
-.prose > .table-wrap {
-  max-width: 100%;
-}
+
 
 .prose > * + * {
   margin-top: 1.4em;
@@ -1519,6 +1526,8 @@ a {
   );
   pointer-events: none;
   opacity: 0;
+  /* 沉到内容之下：只糊背景，不盖住 logo 和图标 */
+  z-index: -1;
   transition: opacity 0.4s var(--ease-out);
 }
 .header.is-solid::before {
@@ -1606,7 +1615,10 @@ a {
   color: var(--code-ink);
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
-  white-space: nowrap;
+  /* 只在真的放不下时才断，正常情况保持整串 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 /* 宽表格：横向可滚，避免列被压扁 */
 .table-wrap {
@@ -1638,4 +1650,72 @@ a {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+/* ==========================================================================
+   右侧目录：竖排、素净，滚动时高亮当前小节
+   ========================================================================== */
+.post-aside .toc {
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+.post-aside .toc h4 {
+  margin: 0 0 18px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.post-aside .toc ol {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.post-aside .toc li {
+  margin-bottom: 11px;
+}
+.post-aside .toc a {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--body-ink);
+  transition: color 0.2s var(--ease-out);
+}
+.post-aside .toc a:hover {
+  color: var(--link);
+  text-decoration: none;
+}
+.post-aside .toc a.is-active {
+  color: var(--link);
+}
+
+/* 窄屏：目录收到正文上方，恢复成胶囊 */
+@media (max-width: 900px) {
+  .post-layout {
+    display: block;
+  }
+  .post-aside {
+    position: static;
+    margin-bottom: 8px;
+  }
+  .post-aside .toc ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .post-aside .toc li {
+    margin: 0;
+  }
+  .post-aside .toc a {
+    padding: 6px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    font-size: 14px;
+  }
 }
