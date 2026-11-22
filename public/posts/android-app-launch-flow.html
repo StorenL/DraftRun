@@ -107,7 +107,7 @@
           <article class="prose">
             <blockquote><p>基准：Android 12 ~ 16（API 31 ~ 36），源码路径以 Android 15/16 为准。</p></blockquote>
 
-<p><img src="/images/android-app-launch-flow/00-cover.webp" alt="封面：从图标到第一帧" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/00-cover.webp" alt="封面：从图标到第一帧" loading="lazy" /></figure>
 
 <p>早上八点四十，地铁十号线。一个人用拇指点开外卖 App，屏幕先亮起一块品牌色，中间是应用图标，几百毫秒后内容滑出来。他大概率只会觉得“今天没卡”。</p>
 
@@ -141,7 +141,7 @@
 
 <p>这几个数字不是同一个东西。混着用，就会得到“优化了 300ms 但用户没感觉”的结论。</p>
 
-<p><img src="/images/android-app-launch-flow/01-start-types.webp" alt="冷启动、温启动、热启动与几种计时口径" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/01-start-types.webp" alt="冷启动、温启动、热启动与几种计时口径" loading="lazy" /></figure>
 
 <h3 id="section-2">冷、温、热：先确认进程在不在</h3>
 
@@ -157,7 +157,7 @@
 
 <p>把常见的指标放在一张表里，差异会更直观：</p>
 
-<table><thead><tr><th>指标</th><th>起点</th><th>终点</th><th>典型用途</th><th>容易踩的坑</th></tr></thead><tbody><tr><td><code>Displayed</code>（logcat）</td><td>ATMS 受理 <code>startActivity</code></td><td>首帧绘制完成</td><td>系统侧观测、线上粗粒度</td><td>不含 Launcher 点击处理；含 splash；和 <code>TotalTime</code> 是同一区间的两种采法</td></tr><tr><td><code>am start -W</code> 的 <code>TotalTime</code></td><td>ATMS 受理（<code>notifyActivityLaunching</code>）</td><td>首帧绘制完成</td><td>本地快速对比</td><td>与 <code>Displayed</code> 同区间；<code>WaitTime</code> 还含 shell 排队</td></tr><tr><td>Perfetto 全链路</td><td><code>bindApplication</code>（可再往前追到 ATMS）</td><td>首帧（可再往后追到合成）</td><td>本地定位、方法级归因</td><td>要手动埋点才能细到业务方法</td></tr><tr><td>TTID</td><td>点击（埋点定义）</td><td>首帧</td><td>用户视角的“看到内容”</td><td>埋点位置不同，数值不可横向比较</td></tr><tr><td>TTFD</td><td>点击</td><td>内容真正就绪（<code>reportFullyDrawn</code>）</td><td>用户视角的“能用”</td><td>要 App 主动上报，否则等于 TTID</td></tr></tbody></table>
+<div class="table-wrap"><table><thead><tr><th>指标</th><th>起点</th><th>终点</th><th>典型用途</th><th>容易踩的坑</th></tr></thead><tbody><tr><td><code>Displayed</code>（logcat）</td><td>ATMS 受理 <code>startActivity</code></td><td>首帧绘制完成</td><td>系统侧观测、线上粗粒度</td><td>不含 Launcher 点击处理；含 splash；和 <code>TotalTime</code> 是同一区间的两种采法</td></tr><tr><td><code>am start -W</code> 的 <code>TotalTime</code></td><td>ATMS 受理（<code>notifyActivityLaunching</code>）</td><td>首帧绘制完成</td><td>本地快速对比</td><td>与 <code>Displayed</code> 同区间；<code>WaitTime</code> 还含 shell 排队</td></tr><tr><td>Perfetto 全链路</td><td><code>bindApplication</code>（可再往前追到 ATMS）</td><td>首帧（可再往后追到合成）</td><td>本地定位、方法级归因</td><td>要手动埋点才能细到业务方法</td></tr><tr><td>TTID</td><td>点击（埋点定义）</td><td>首帧</td><td>用户视角的“看到内容”</td><td>埋点位置不同，数值不可横向比较</td></tr><tr><td>TTFD</td><td>点击</td><td>内容真正就绪（<code>reportFullyDrawn</code>）</td><td>用户视角的“能用”</td><td>要 App 主动上报，否则等于 TTID</td></tr></tbody></table></div>
 
 <p><code>Displayed</code> 这一行值得多说一句。它的起点在 <code>system_server</code> 收到请求之后，所以 Launcher 从触摸到发出 Binder 调用的那段时间不在里面；它的终点是窗口完成第一帧绘制，而不是 <code>onResume</code> 返回。后面我们会看到，这两者之间可能隔着好几个 vsync。</p>
 
@@ -211,7 +211,7 @@
 
 <p>需要提醒的是，<code>system_server</code> 的主线程是单线程的。所有应用启动、Activity 切换、窗口事务都要在这条线程上排队（部分工作会分发给 <code>android.ui</code>、<code>android.display</code> 等线程，但关键决策仍然集中）。这意味着<strong>你的 App 启动慢，有时不是因为你的代码慢，而是因为 system_server 正在忙</strong>——比如另一个应用在频繁启动、系统在安装更新、或者某个系统服务持有了锁。线上大样本里，这类“系统侧抖动”会以长尾的形式出现，值得在 trace 里单独看一眼。</p>
 
-<p><img src="/images/android-app-launch-flow/02-chain.webp" alt="一次点击穿过四个进程" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/02-chain.webp" alt="一次点击穿过四个进程" loading="lazy" /></figure>
 
 <blockquote><p>图里把 Launcher、system_server、Zygote、App 四个进程画在了一起，①-⑦ 是链路里的关键交接点。实线是真实的跨进程调用，虚线是视觉上的叠放关系。</p></blockquote>
 
@@ -246,7 +246,7 @@
 
 <p>预加载的东西是所有 App 共享的。共享的方式是 fork 加写时复制（Copy-on-Write）：fork 时内核只复制页表，父子进程指向同一批物理页，并把这些页标记为只读；任何一方尝试写入，内核才为它复制一份新的页。于是每个 App 进程都“天生”拥有一份已经加载好的类、资源和运行时状态，不需要重新加载一遍，也不需要重新占用一份物理内存。</p>
 
-<p><img src="/images/android-app-launch-flow/03-zygote.webp" alt="Zygote fork 与写时复制" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/03-zygote.webp" alt="Zygote fork 与写时复制" loading="lazy" /></figure>
 
 <h3 id="fork">fork 到底花了多少时间</h3>
 
@@ -350,7 +350,7 @@
 
 <p>这也是为什么启动优化不能只看平均值：低端机和冷文件缓存下的长尾，才是用户抱怨的那部分。</p>
 
-<p><img src="/images/android-app-launch-flow/04-app-thread.webp" alt="App 主线程上的启动消息" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/04-app-thread.webp" alt="App 主线程上的启动消息" loading="lazy" /></figure>
 
 <h2 id="5-activity">
               5. Activity 的生命周期，只是启动的一半
@@ -401,7 +401,7 @@
               <a class="anchor" href="#6-vsync">链接到此标题</a>
             </h2>
 
-<p><img src="/images/android-app-launch-flow/05-first-frame.webp" alt="第一帧的一生" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/05-first-frame.webp" alt="第一帧的一生" loading="lazy" /></figure>
 
 <p><code>ViewRootImpl.setView()</code> 里最关键的动作是 <code>requestLayout()</code>，它会把一次 traversal 排进 <code>Choreographer</code> 的回调队列。<code>Choreographer</code> 是主线程上的帧调度器，它通过 <code>DisplayEventReceiver</code> 订阅 SurfaceFlinger 的 vsync；vsync 到来时，<code>doFrame()</code> 依次执行输入、动画、遍历（<code>measure</code> / <code>layout</code> / <code>draw</code>）这几类回调。</p>
 
@@ -423,7 +423,7 @@
 
 <p>判断“可交互”比“已绘制”更难：输入事件的分发、动画的稳定性、列表的预取都会影响体验。平台侧的 <code>FrameMetrics</code> / <code>JankStats</code> 看的是首帧之后每一帧的卡顿，Macrobenchmark 的 <code>StartupTimingMetric</code> 只给 TTID / TTFD 两个里程碑，回答不了“首帧之后卡不卡”。两者要一起看。</p>
 
-<p><img src="/images/android-app-launch-flow/06-sequence.webp" alt="一次冷启动的完整时序" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/06-sequence.webp" alt="一次冷启动的完整时序" loading="lazy" /></figure>
 
 <blockquote><p>把前面几节拼在一起：Launcher 发出请求，system_server 决策并拉起 Zygote，新进程 attach 后执行 Application 和 Activity 生命周期，主线程完成第一帧，splash 退场。冷启动才走“进程诞生”那一段；温启动和热启动直接从生命周期开始。</p></blockquote>
 
@@ -432,11 +432,11 @@
               <a class="anchor" href="#7-400">链接到此标题</a>
             </h2>
 
-<p><img src="/images/android-app-launch-flow/07-budget.webp" alt="一条 400ms 冷启动的预算表" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/07-budget.webp" alt="一条 400ms 冷启动的预算表" loading="lazy" /></figure>
 
 <p>先把“启动”当成一个项目来管：给它一个总预算，再把这笔预算分给链路上的每一段。图里把一条约 400ms 的冷启动摊到七个阶段，用来展示“钱花在哪几段”，不是某台设备上的严格实测：</p>
 
-<table><thead><tr><th>阶段</th><th>量级</th><th>里面发生了什么</th><th>谁能让它变小</th></tr></thead><tbody><tr><td>ATMS 调度 + Binder 交接</td><td>20–60 ms</td><td>权限校验、Intent 解析、Task 决策、进程创建指令、窗口事务</td><td>系统；应用只能减少启动次数</td></tr><tr><td>Zygote fork + 进程初始化</td><td>10–40 ms</td><td>页表复制、缺页、Binder 线程池、SELinux 切换</td><td>系统、OEM</td></tr><tr><td>bindApplication</td><td>40–150 ms</td><td>资源加载、Application 创建、Provider 初始化、<code>Application.onCreate</code></td><td>应用（主要可优化段）</td></tr><tr><td>Activity 创建 + inflate</td><td>30–120 ms</td><td>类加载、<code>Activity.attach</code>、<code>setContentView</code>、布局解析</td><td>应用</td></tr><tr><td>首帧渲染</td><td>40–150 ms</td><td>measure / layout / draw、RenderThread、GPU</td><td>应用</td></tr><tr><td>合成 + 上屏</td><td>16–50 ms</td><td>SurfaceFlinger 合成、HWC 送显</td><td>系统</td></tr><tr><td>未归因抖动</td><td>0–100 ms</td><td>系统繁忙、冷缓存、CPU 调度、锁竞争</td><td>双方</td></tr></tbody></table>
+<div class="table-wrap"><table><thead><tr><th>阶段</th><th>量级</th><th>里面发生了什么</th><th>谁能让它变小</th></tr></thead><tbody><tr><td>ATMS 调度 + Binder 交接</td><td>20–60 ms</td><td>权限校验、Intent 解析、Task 决策、进程创建指令、窗口事务</td><td>系统；应用只能减少启动次数</td></tr><tr><td>Zygote fork + 进程初始化</td><td>10–40 ms</td><td>页表复制、缺页、Binder 线程池、SELinux 切换</td><td>系统、OEM</td></tr><tr><td>bindApplication</td><td>40–150 ms</td><td>资源加载、Application 创建、Provider 初始化、<code>Application.onCreate</code></td><td>应用（主要可优化段）</td></tr><tr><td>Activity 创建 + inflate</td><td>30–120 ms</td><td>类加载、<code>Activity.attach</code>、<code>setContentView</code>、布局解析</td><td>应用</td></tr><tr><td>首帧渲染</td><td>40–150 ms</td><td>measure / layout / draw、RenderThread、GPU</td><td>应用</td></tr><tr><td>合成 + 上屏</td><td>16–50 ms</td><td>SurfaceFlinger 合成、HWC 送显</td><td>系统</td></tr><tr><td>未归因抖动</td><td>0–100 ms</td><td>系统繁忙、冷缓存、CPU 调度、锁竞争</td><td>双方</td></tr></tbody></table></div>
 
 <p>这张表最容易被误读成“把各段加起来就是启动时间”。七段加起来正好 400ms，只是为了让预算概念直观；在真实 trace 里，各段互相重叠：<code>startProcessAsync</code> 发起的进程创建和 system_server 的窗口/pause 事务并行推进，首帧渲染也要等某个 vsync 才开始。可靠的做法是在 Perfetto 里看自己应用的那条时间线，把每个 slice 的墙钟时间标出来，而不是拿一张通用表往项目上套。</p>
 
@@ -472,7 +472,7 @@
               <a class="anchor" href="#8">链接到此标题</a>
             </h2>
 
-<p><img src="/images/android-app-launch-flow/08-measure.webp" alt="不同启动度量工具的能力边界" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/08-measure.webp" alt="不同启动度量工具的能力边界" loading="lazy" /></figure>
 
 <p>先把工具摆在桌面上。没有一把尺子能同时做到“线上可用、可重复、能定位到方法”，所以启动测量很少能靠一个工具完成，通常要凑成一组：一个负责快速对比，一个负责定位，一个负责守住回归。</p>
 
@@ -756,7 +756,7 @@
               <a class="anchor" href="#9">链接到此标题</a>
             </h2>
 
-<p><img src="/images/android-app-launch-flow/09-optimize.webp" alt="启动优化的四种杠杆" loading="lazy" /></p>
+<figure class="prose-figure"><img src="/images/android-app-launch-flow/09-optimize.webp" alt="启动优化的四种杠杆" loading="lazy" /></figure>
 
 <p>启动优化最常见的失败方式，是一上来就“优化代码”：把某个方法改成异步、把某个库换成更轻的、给 <code>onCreate</code> 加个 <code>Thread</code>。这些动作可能有效，但如果不知道时间花在哪一段，你只是在碰运气。</p>
 
@@ -947,7 +947,7 @@
               <a class="anchor" href="#section-39">链接到此标题</a>
             </h2>
 
-<table><thead><tr><th>能力 / 行为</th><th>起始版本</th><th>说明</th></tr></thead><tbody><tr><td><code>Activity.reportFullyDrawn()</code></td><td>API 19</td><td>定义 TTFD / “Fully drawn”</td></tr><tr><td><code>FrameMetrics</code></td><td>API 24</td><td>逐帧 UI / RenderThread 耗时</td></tr><tr><td><code>ClientTransaction</code> / <code>TransactionExecutor</code></td><td>API 28</td><td>生命周期事务化</td></tr><tr><td>Baseline / cloud profile 的编译路径</td><td>API 28+（Play 参与）</td><td><code>speed-profile</code> 部分 AOT</td></tr><tr><td><code>android:zygotePreloadName</code> / <code>ZygotePreload</code></td><td>API 29</td><td>app zygote fork 前预加载应用代码，供隔离服务使用</td></tr><tr><td>系统 SplashScreen（<code>android.window.SplashScreen</code>）</td><td>API 31</td><td>冷/温启动统一启动画面，首帧后退场</td></tr><tr><td>AndroidX <code>core-splashscreen</code></td><td>minSdk 21（图标 23+）</td><td>向下兼容的系统 splash</td></tr><tr><td><code>windowSplashScreenBehavior</code></td><td>API 33</td><td>控制是否始终显示动画图标</td></tr><tr><td><code>ApplicationStartInfo</code></td><td>API 35</td><td>startType / reason / startupState / 时间戳</td></tr><tr><td><code>ApplicationStartInfo#getStartComponent()</code></td><td>API 36</td><td>区分 Activity / Service / Broadcast / Provider 触发</td></tr><tr><td>16 KB page size 支持要求</td><td>Android 15（16 KB 页设备）</td><td>Google Play 自 2025-11-01 起要求 target 35+ 的新包/更新支持，和启动间接相关</td></tr></tbody></table>
+<div class="table-wrap"><table><thead><tr><th>能力 / 行为</th><th>起始版本</th><th>说明</th></tr></thead><tbody><tr><td><code>Activity.reportFullyDrawn()</code></td><td>API 19</td><td>定义 TTFD / “Fully drawn”</td></tr><tr><td><code>FrameMetrics</code></td><td>API 24</td><td>逐帧 UI / RenderThread 耗时</td></tr><tr><td><code>ClientTransaction</code> / <code>TransactionExecutor</code></td><td>API 28</td><td>生命周期事务化</td></tr><tr><td>Baseline / cloud profile 的编译路径</td><td>API 28+（Play 参与）</td><td><code>speed-profile</code> 部分 AOT</td></tr><tr><td><code>android:zygotePreloadName</code> / <code>ZygotePreload</code></td><td>API 29</td><td>app zygote fork 前预加载应用代码，供隔离服务使用</td></tr><tr><td>系统 SplashScreen（<code>android.window.SplashScreen</code>）</td><td>API 31</td><td>冷/温启动统一启动画面，首帧后退场</td></tr><tr><td>AndroidX <code>core-splashscreen</code></td><td>minSdk 21（图标 23+）</td><td>向下兼容的系统 splash</td></tr><tr><td><code>windowSplashScreenBehavior</code></td><td>API 33</td><td>控制是否始终显示动画图标</td></tr><tr><td><code>ApplicationStartInfo</code></td><td>API 35</td><td>startType / reason / startupState / 时间戳</td></tr><tr><td><code>ApplicationStartInfo#getStartComponent()</code></td><td>API 36</td><td>区分 Activity / Service / Broadcast / Provider 触发</td></tr><tr><td>16 KB page size 支持要求</td><td>Android 15（16 KB 页设备）</td><td>Google Play 自 2025-11-01 起要求 target 35+ 的新包/更新支持，和启动间接相关</td></tr></tbody></table></div>
 
 <h2 id="section-40">
               参考资料

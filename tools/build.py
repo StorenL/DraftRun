@@ -255,7 +255,9 @@ def md_to_html(body: str):
             )
             cap = f"<caption>{inline(caption)}</caption>" if caption else ""
             blocks.append(
+                '<div class="table-wrap">'
                 f"<table>{cap}<thead><tr>{thead}</tr></thead><tbody>{tbody}</tbody></table>"
+                "</div>"
             )
             continue
 
@@ -263,6 +265,17 @@ def md_to_html(body: str):
         cap = re.match(r"^表[：:]\s*(.+)$", line.strip())
         if cap:
             blocks.append(("caption", cap.group(1).strip()))
+            i += 1
+            continue
+
+        # 独占一行的图片，输出成 figure 以便撑宽
+        only_img = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)\)\s*$", line)
+        if only_img:
+            blocks.append(
+                '<figure class="prose-figure">'
+                f'<img src="{only_img.group(2)}" alt="{html.escape(only_img.group(1))}" loading="lazy" />'
+                "</figure>"
+            )
             i += 1
             continue
 
