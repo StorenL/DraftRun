@@ -1539,3 +1539,26 @@ a {
   color: var(--link);
   border-bottom-color: currentColor;
 }
+/* ==========================================================================
+   涂鸦的呼吸：这三组 keyframes 之前随大段 CSS 一起被误删了，
+   结果 .blob / .plane / .sun-rays 一直在引用不存在的动画
+   ========================================================================== */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50%      { transform: translate(7px, -5px) rotate(-2deg); }
+}
+@keyframes turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .plane,
+  .sun-rays {
+    animation: none;
+  }
+}
