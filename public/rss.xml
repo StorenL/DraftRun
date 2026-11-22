@@ -5,7 +5,7 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sun, 22 Nov 2026 17:45:37 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 22 Nov 2026 17:48:55 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
@@ -22,6 +22,14 @@
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
       <description><![CDATA[<p>用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>]]></description>
+    </item>
+    <item>
+      <title>一次开机内的 root：Android 临时 Root 的技术链路</title>
+      <link>https://draft.run/posts/android-temp-root</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-temp-root</guid>
+      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>]]></description>
     </item>
     <item>
       <title>从图标到第一帧：Android 应用启动流程</title>

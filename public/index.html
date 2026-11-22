@@ -215,6 +215,20 @@
               </a>
             </article>
             <article class="post-item">
+              <h3><a href="/posts/android-temp-root">一次开机内的 root：Android 临时 Root 的技术链路</a></h3>
+              <p class="post-item__sub">一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>
+              <p class="post-item__excerpt">Bootloader 锁着，su 却能用。这条链路根本不动启动链——它在已经跑起来的系统里把内核改掉。从权限原语、任意读写，到把 KernelSU 装进活动内核，逐段拆开。</p>
+              <a class="readmore" href="/posts/android-temp-root">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
+            <article class="post-item">
               <h3><a href="/posts/android-app-launch-flow">从图标到第一帧：Android 应用启动流程</a></h3>
               <p class="post-item__sub">应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。</p>
               <p class="post-item__excerpt">一次冷启动要横跨 Launcher、system_server、Zygote、应用进程四个进程。按真实顺序走一遍，把每个交接点落到具体的类、日志和 trace 上，你才知道时间里哪一段是可以动的。</p>
@@ -264,6 +278,12 @@
                   <a href="/posts/android-boot-flow">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>从电源键到首帧：Android 系统启动流程</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/posts/android-temp-root">
+                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
+                    <span>一次开机内的 root：Android 临时 Root 的技术链路</span>
                   </a>
                 </li>
                 <li>

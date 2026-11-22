@@ -133,7 +133,19 @@ def main():
         return f"![{alt}](/images/{args.slug}/{new})"
 
     body = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", rewrite, body)
-    body = body.strip() + "\n"
+
+    # 文末常见「分隔线 + 斜体免责声明」，这段内容应该进 note
+    lines = body.rstrip().split("\n")
+    while lines and (not lines[-1].strip() or re.fullmatch(r"-{3,}", lines[-1].strip())):
+        lines.pop()
+    if lines and re.fullmatch(r"\*[^*].*\*", lines[-1].strip()):
+        dropped = lines.pop().strip().strip("*")
+        print(f"  文末免责声明已移出正文：{dropped[:28]}…")
+        while lines and not lines[-1].strip():
+            lines.pop()
+        while lines and re.fullmatch(r"-{3,}", lines[-1].strip()):
+            lines.pop()
+    body = "\n".join(lines).strip() + "\n"
 
     title = auto.get("title") or args.slug
     minutes = args.minutes or auto.get("minutes", "10")

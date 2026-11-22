@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>一次开机内的 root：Android 临时 Root 的技术链路 · 潦草地</title>
+    <meta name="description" content="一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("lc-theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="canonical" href="https://draft.run/posts/android-temp-root" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="潦草地" />
+    <meta property="og:title" content="一次开机内的 root：Android 临时 Root 的技术链路" />
+    <meta property="og:description" content="一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。" />
+    <meta property="og:url" content="https://draft.run/posts/android-temp-root" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <header class="header" data-header>
+      <div class="shell">
+        <a class="brand" href="/" aria-label="潦草地">
+          潦草地
+          <svg class="brand__scratch" viewBox="0 0 90 10" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M2 6q11-5 22 0t22 0t22 0t20 0"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+            />
+          </svg>
+        </a>
+
+        <nav class="nav" aria-label="主导航">
+          <a href="/">文章</a>
+          <a href="/#categories">分类</a>
+          <a href="/#about">关于</a>
+        </nav>
+
+        <div class="header__tools">
+          <button class="icon-btn" type="button" aria-label="搜索">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m19.5 19.5-4-4" />
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" data-theme-toggle aria-label="切换到暗色">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" />
+            </svg>
+          </button>
+          <a class="icon-btn" href="/rss.xml" aria-label="RSS">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="wrap post-head">
+        <p class="post-kicker">Android</p>
+        <h1 class="post-title">一次开机内的 root：Android 临时 Root 的技术链路</h1>
+        <p class="post-dek">一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>
+        <p class="post-meta">
+          <span>首发于 <a href="/">2026 年 11 月 23 日</a></span>
+          <span class="sep">·</span>
+          <span>约 45 分钟</span>
+          <span class="sep">·</span>
+          <a href="/#writing">Android</a>
+        </p>
+        <hr class="rule" />
+      </div>
+
+      <div class="wrap post-layout">
+        <div class="post-main">
+          <article class="prose">
+            <figure class="prose-figure"><img src="/images/android-temp-root/00-cover.webp" alt="封面：一次开机内的 root" loading="lazy" /></figure>
+
+<p>十月底，一台 Galaxy S25 被放在维修台上。机主说手机没解过 BL，设置里的「OEM 解锁」也是灰的。</p>
+
+<p>验证一下：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">TEXT</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">$ fastboot getvar unlocked</span>
+<span class="line">unlocked: no</span>
+<span class="line">$ adb shell su -c id</span>
+<span class="line">uid=0(root) gid=0(root) groups=0(root) context=u:r:ksu:s0</span></code></pre>
+            </div>
+
+<p>两条命令说的都是真的。Bootloader 确实锁着，<code>su</code> 也确实能用。屏幕上的 KernelSU 管理器显示「工作中」，装好的模块在跑，而 <code>ro.boot.flash.locked</code> 还是 <code>1</code>。</p>
+
+<p>如果只看「root 必须解 BL」这条经验，这个场景是矛盾的。但如果把 root 拆成「权限从哪来」和「权限能活多久」两个问题，它就不矛盾了：2026 年这波临时 root 根本不去动启动链，它在已经跑起来的系统里把内核改掉，再把 KernelSU 装进去。Bootloader 锁管的不是这件事。</p>
+
+<p>这篇文章拆的是这条链路：一个普通 App 或 shell 进程，怎么走到 <code>uid=0</code>，怎么把 KernelSU 加载进正在运行的内核，为什么高版本 Android 没拦住，以及它到底能做什么、不能做什么。文中不会给操作步骤和工具下载地址；谈的是机制、公开研究与工程边界。</p>
+
+<h2 id="1-root">
+              1. 先把「root」拆成身份和会话
+              <a class="anchor" href="#1-root">链接到此标题</a>
+            </h2>
+
+<p>「root」在日常语境里混着两件事。</p>
+
+<p>第一件是<strong>身份</strong>：设备从此归你管，<code>su</code> 常驻，可以改系统分区、换内核、刷 ROM。这个身份必须写进启动链——把修补过的 boot 镜像刷进去，让系统每次开机都自动加载 root 组件。Bootloader 锁和 AVB 校验针对的正是这个动作，所以「解 BL 才能 root」在过去是准确的。</p>
+
+<p>第二件是<strong>会话</strong>：本次开机内，某个进程拿到 <code>uid=0</code>，能读内核内存、能装模块；完整重启之后，一切归零。这个会话不需要写任何分区，因为它的权限来源不是启动镜像，而是运行中内核的一个漏洞。</p>
+
+<p>两条路都能得到 <code>uid=0</code>，但代价完全不同：</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/01-two-paths.webp" alt="两条路径：改启动链，或者运行期提权" loading="lazy" /></figure>
+
+<p>路径 A 的每一步都留下持久痕迹，也都需要 BL 解锁。路径 B 的每一步都只存在于内存，BL 状态不变。<strong>临时 root 不是「破解了 Bootloader」，它只是绕开了 Bootloader 管辖的范围。</strong></p>
+
+<p>这里要先纠正一个常见误解：临时 root 并不等于「把 BL 解开」。处于临时 root 会话里的手机，fastboot 仍然是锁的，不能刷第三方镜像，不能换内核，也不能刷 ROM。它给的是一次性的内核权限，不是设备的完整控制权。反过来，解了 BL 的手机也可以完全不用临时 root——两条路是正交的。</p>
+
+<p>真正的问题是：Bootloader 和 AVB 到底在验证什么？为什么「内核内存被改」不在它们的检查范围里？</p>
+
+<h2 id="2">
+              2. 启动链的四道门，各管各的
+              <a class="anchor" href="#2">链接到此标题</a>
+            </h2>
+
+<p>Android 的启动信任链可以粗分成四层，每层验证的对象和时机都不同：</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/02-trust-chain.webp" alt="启动链的四道门，以及它们管不到的内核内存" loading="lazy" /></figure>
+
+<ul><li><strong>Boot ROM</strong>：固化在 SoC 里，是信任根。它验证下一段代码的签名，用户无法修改。</li><li><strong>Bootloader</strong>：验证 <code>boot</code> / <code>vendor_boot</code> 等镜像的签名，同时决定 <code>fastboot</code> 是否允许刷写。BL 锁就是这一层的状态位。</li><li><strong>vbmeta + AVB</strong>：Android Verified Boot 读取 <code>vbmeta</code> 分区里的签名和哈希，验证启动镜像的完整性。解锁状态下可以刷入关闭校验的 <code>vbmeta</code>；锁定时没有这条路径。</li><li><strong>dm-verity</strong>：在块设备层验证 <code>system</code> / <code>vendor</code> 分区的哈希树。每次从磁盘读一个块，都要和哈希树对上。</li></ul>
+
+<p>这四层有一个共同点：<strong>它们验证的都是「启动时加载了什么」和「从磁盘读出来的是什么」。</strong> 一旦内核开始运行、页进入 page cache、进程拿到 cred，验证链就结束了。临时 root 恰好发生在验证链结束之后。</p>
+
+<p>具体到几个对象：</p>
+
+<div class="table-wrap"><table><thead><tr><th>对象</th><th>谁在验证</th><th>验证时机</th><th>临时 root 是否触碰</th></tr></thead><tbody><tr><td><code>boot</code> 分区</td><td>Bootloader / AVB</td><td>启动时</td><td>不碰</td></tr><tr><td><code>vbmeta</code></td><td>Bootloader / AVB</td><td>加载 boot 前</td><td>不碰</td></tr><tr><td><code>system</code> 分区块</td><td>dm-verity</td><td>每次读盘</td><td>只在 page cache 里改，不落盘</td></tr><tr><td>内核 <code>cred</code> 结构体</td><td>没有持续校验</td><td>无</td><td>直接覆写</td></tr><tr><td>已加载的内核模块</td><td>模块签名策略</td><td>加载时</td><td>用已获得的 root 权限加载</td></tr><tr><td>SELinux 策略状态</td><td>内核 LSM</td><td>每次访问</td><td>在内核内存里改</td></tr></tbody></table></div>
+
+<p>这张表解释了为什么「锁 BL」挡不住临时 root：锁的是一个发生在开机前、针对磁盘镜像的检查，而 root 发生在开机后、针对内存的修改。两者在时间上和对象上都不重叠。</p>
+
+<p>还有一个副作用值得提前说：因为 BL 状态和 verified boot 状态都没变，<strong>Play Integrity 和 Key Attestation 看到的环境是「干净」的</strong>。银行 App 如果只检查这两个信号，临时 root 反而比解 BL 更容易过关。这也是它比持久 root 更受欢迎的原因之一——代价从「设备状态永久改变」变成了「每次重启重来一遍」。</p>
+
+<p>当然，「系统 API 看起来干净」和「检测不到 root」是两回事。KernelSU 管理器、<code>su</code> 进程、模块挂载点都是可检测的痕迹，第 8 节会展开。</p>
+
+<h2 id="3-2026">
+              3. 2026：三条线怎么汇到一起
+              <a class="anchor" href="#3-2026">链接到此标题</a>
+            </h2>
+
+<p>临时 root 的原料不是 2026 年才有的。Dirty Pipe（CVE-2022-0847）就是页缓存写入，Adreno GPU 的物理读写漏洞在 2025 年已经被用来做临时 root。真正让它在 2026 年变成大众话题的，是三条线同时到位：</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/03-timeline.webp" alt="2026 时间线：基础设施、漏洞、工具三条线" loading="lazy" /></figure>
+
+<p><strong>第一条线是加载器。</strong> 2026 年 3 月 24 日，KernelSU v3.2.0 引入了 late-load 模式与 jailbreak（越狱）模式。这件事的技术含量经常被低估：在这之前，内核 LPE 只能给你一个 root shell，你要自己敲命令、自己找模块、自己处理 SELinux；在这之后，一个已经拿到 root 的进程可以用 <code>ksud late-load</code> 把 <code>kernelsu.ko</code> 加载进运行中的内核，再由 ksud 完成用户态安装，管理器、模块、<code>su</code> 授权全部就位。漏洞到「可用的 root 环境」之间那最后一公里，被官方工具补上了。</p>
+
+<p><strong>第二条线是漏洞。</strong> 5 月上旬，DirtyFrag 的两个页缓存写入漏洞公开（CVE-2026-43284 / CVE-2026-43500），在 Linux 测试环境里无需竞态、成功率接近 100%；5 月 21 日，GhostLock（CVE-2026-43499）的 CVE 记录发布，这是一个在 Linux 里潜伏了十五年左右的 futex-PI 栈 UAF，被 NebuSec 做成 97% 稳定、约 5 秒完成提权的利用，还拿了 Google kernelCTF 的奖金；7 月和 10 月，POSIX CPU timer 的两个 UAF（CVE-2026-64560、CVE-2026-98260）相继公开，成了 10 月那批一键工具的核心。</p>
+
+<p><strong>第三条线是产品与分发。</strong> 7 月 30 日，Root My Galaxy 发布，Galaxy S25 Ultra 率先可用，S24/S25 系列陆续适配；它不熔断 Knox、Play Integrity 保持；8 月，中文圈开始出现 KernelSU 越狱模式教程和 Shizuku 免电脑方案；9 月 28 日到 10 月 3 日这六天里，B 站「临时 root」相关搜索结果的前 25 条集中出现；10 月 8 日，社区出现 DirtyFrag 的安卓版本，主打「两秒提权」；11 月，GhostRoot、KSuRoot、SamTimer 还在迭代。</p>
+
+<p>这条时间线里最值得注意的不是某个工具，而是<strong>9 月到 10 月的反弹</strong>：9 月安全补丁修掉了一批当时在用的链路，社区一度哀嚎「9 月补丁那波把人整不会了」；但 10 月 6 日 CVE-2026-98260 公开，10 月初新工具立刻补位。漏洞是消耗品，厂商补一个，社区换一个。窗口期不取决于「有没有漏洞」，而取决于「从漏洞公开到厂商把补丁下放到具体机型」之间的时间差。</p>
+
+<h2 id="4">
+              4. 一条链的七个交接点
+              <a class="anchor" href="#4">链接到此标题</a>
+            </h2>
+
+<p>把上面的线索拼起来，一条典型的临时 root 链路是这样的：</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/04-chain.webp" alt="临时 root 的七个交接点" loading="lazy" /></figure>
+
+<p>七个交接点里，第 1 到第 4 步是「拿到内核权限」，第 5 到第 7 步是「把权限变成可用的 root 环境」。下面按顺序拆。</p>
+
+<h3 id="4-1-shell">4.1 入口：为什么需要一个 shell 级进程</h3>
+
+<p>Android 的普通 App 跑在 <code>untrusted_app</code> 域里，SELinux 策略和 seccomp 白名单把能用的系统调用砍掉了不少。有些内核 bug 的触发路径在 App 域里根本走不到，或者走到了也会被 seccomp 直接杀掉。</p>
+
+<p>所以大多数工具需要一个「比 App 宽、比 root 窄」的入口。最常见的是 Shizuku：它通过 ADB 或无线调试启动一个 <code>app_process</code>，以 shell（uid 2000）身份常驻，再通过 Binder 把「执行命令」的能力借给 App。对内核来说，这个进程是 shell 域，syscall 面比 <code>untrusted_app</code> 大得多，但又没有 root 权限——刚好够触发漏洞，不够直接改内核。</p>
+
+<p>也有工具不需要 Shizuku。DirtyFrag 在三星上的入口是 App 自己：它通过 <code>IpSecManager</code> 创建 XFRM transform，用 <code>splice</code> 把文件页挂进 UDP skb，整个触发路径都在 App 可用的 API 里。这也是为什么它的使用体验明显更「一键」。</p>
+
+<p>还有一种入口不走内核：用非内核的 LPE 先拿到系统进程的权限。比如 Android 17 早期版本里的 Telecom 组件漏洞（CVE-2026-49881），可以从 <code>untrusted_app</code> 打到 <code>system_server</code>，再用 system_server 的权限去触发内核漏洞。LSPromise 这类项目就是把这个链和 DirtyFrag 串起来，做到不依赖 Shizuku。非内核 LPE 不能直接给 root（system_server 也不是 root），但它能把「入口」这一层的限制绕开——最终的内核提权还是得靠内核漏洞。</p>
+
+<p>入口这一层不产生 root，它只负责让后面的 syscall 能发出去。真正的权限跃迁发生在内核里。</p>
+
+<h3 id="4-2">4.2 触发：三种被反复使用的原语</h3>
+
+<p>2026 年被用得最多的三类内核 bug，形态差别很大，但目标一致：让攻击者控制的数据落进一个内核对象，形成一次「受控写」。</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/05-primitives.webp" alt="三类漏洞原语：页缓存写入、futex-PI UAF、POSIX timer UAF" loading="lazy" /></figure>
+
+<h4 id="4-2-1-dirtyfrag">4.2.1 页缓存写入：DirtyFrag</h4>
+
+<p>DirtyFrag 属于「Dirty Pipe 家族」：攻击者用 <code>splice()</code> 把一个只读文件的页缓存页固定到某个内核数据结构里，然后内核在这块本不属于它的内存上做原地写入。</p>
+
+<p>CVE-2026-43284 的根因在 ESP 输入路径。<code>esp_input()</code> 在解密前本应调用 <code>skb_cow_data()</code>，为非线性 skb 分配私有缓冲区；但当 skb 未被克隆、也没有 <code>frag_list</code> 时，代码会走一条捷径：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">C</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">if (!skb_cloned(skb)) {</span>
+<span class="line">    if (!skb_is_nonlinear(skb)) {</span>
+<span class="line">        nfrags = 1;</span>
+<span class="line">        goto skip_cow;</span>
+<span class="line">    } else if (!skb_has_frag_list(skb)) {</span>
+<span class="line">        nfrags = skb_shinfo(skb)-&gt;nr_frags;</span>
+<span class="line">        nfrags++;</span>
+<span class="line">        goto skip_cow;          // 共享页也走到了这里</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>问题在于，IPv4/IPv6 的 UDP 发送路径通过 <code>MSG_SPLICE_PAGES</code> 把 pipe 页挂进 skb 时，没有设置 <code>SKBFL_SHARED_FRAG</code>。于是这个 skb 看起来像普通的非线性 skb，ESP 解密直接在共享页上原地进行。解密函数在认证之前会先做一次 4 字节 STORE（写 ESN 序列号的高 32 位），这个值攻击者可以在注册 SA 时通过 netlink 指定；写入位置由 <code>splice</code> 的文件偏移决定。两者都可控，就得到了一次「往只读文件页缓存里写 4 字节」的原语。</p>
+
+<p>修复很直接：在 splice 路径打上 <code>SKBFL_SHARED_FRAG</code>，并让 <code>esp_input()</code> 在检测到该标志时回退到 <code>skb_cow_data()</code>。RxRPC 的变体（CVE-2026-43500）是同一个模式：原地解密前只看 <code>skb_cloned()</code>，没看共享页。</p>
+
+<p>这个原语在 Android 上尤其好用，因为它绕开了 dm-verity 的检查时机。dm-verity 校验的是「从块设备读出来的块」，而攻击改的是「读出来之后、存在 page cache 里的页」。攻击者甚至不需要让修改落盘——只要页缓存里有正确的字节，执行流就会按修改后的内容走。</p>
+
+<p>DirtyFrag 的安卓利用链把这一点用得很彻底：</p>
+
+<ol><li>App 通过 <code>IpSecManager</code> 建一个 AES-CBC/HMAC-SHA256 的 ESP transform；</li><li>用页缓存写入把 <code>splice</code> helper 注入 <code>crash_dump64</code>——这个进程跑在 <code>crash_dump</code> 域，能打开 <code>vendor_file</code> 标签的文件，而普通 App 打不开；</li><li>借这个桥把 <code>dfroot.ko</code> 写进一个 <code>vendor_file</code> 文件；</li><li>在 <code>libc++.so</code> 的 <code>std::ostream::sentry::sentry()</code> 上打一段 shellcode。这个函数会在 <code>init</code> 里被调用，而 <code>init</code> 是 uid=0、tid=1 的进程；</li><li>shellcode 检查 uid 和 tid，用 <code>/dev/df</code> 做一次性互斥，然后以 <code>vendor_modprobe</code> 域执行 <code>insmod</code>；</li><li><code>dfroot.ko</code> 的 init 把 SELinux 置为 permissive，用 <code>call_usermodehelper</code> 拉起 bootstrap；</li><li>bootstrap 从 App 的 device-protected 存储里读配置，接管 zygote 环境，最后启动所选管理器的 SU daemon。</li></ol>
+
+<p>整条链里最漂亮的一步是「借 <code>init</code> 的上下文」。页缓存写入本身不提供代码执行，它只提供「改一个只读文件在内存里的内容」；但 Android 的 <code>init</code> 会加载 C++ 运行时，会调用 <code>libc++.so</code> 里的函数，于是被改过的页就变成了以 root 身份执行的代码。这比传统的「改 <code>su</code> 二进制」隐蔽得多，也不用碰任何分区。</p>
+
+<h4 id="4-2-2-futex-pi-uaf-ghostlock">4.2.2 futex-PI UAF：GhostLock</h4>
+
+<p>GhostLock 是另一种风格：它不写文件，它在内核栈上留一个悬空指针。</p>
+
+<p>根因在 <code>kernel/locking/rtmutex.c</code> 的 <code>remove_waiter()</code>。这个函数原本用于「任务自己阻塞」的慢路径，所以一直清理 <code>current-&gt;pi_blocked_on</code>；但 requeue-PI 的 proxy 回滚路径复用了同一个函数，此时 <code>current</code> 是 requeuer，不是 waiter。回滚发生时，<code>remove_waiter()</code> 把错误任务的 <code>pi_blocked_on</code> 清掉了，真正的 waiter 返回用户态时，<code>pi_blocked_on</code> 还指向自己即将被释放的 <code>FUTEX_WAIT_REQUEUE_PI</code> 栈帧。</p>
+
+<p>触发只需要普通的多线程和 futex 系统调用：构造三个线程、三个 futex word 组成的 PI 依赖环，让 proxy enqueue 命中 <code>-EDEADLK</code> 并回滚。之后没有时间压力——waiter 可以慢慢返回用户态，内核里那个悬空指针会一直挂着，等下一次 PI 链遍历（比如 <code>sched_setattr()</code>）去解引用它。</p>
+
+<p>利用的关键是「回收栈帧」。在 x86 上，经典做法是用 <code>user_auxv</code> 配合 <code>PR_SET_MM_MAP</code> 覆盖那块已经释放的内核栈；在 ARM 上，NebuSec 的 Android 17 版本改用 <code>pselect</code> 把 <code>fd_set</code> 位图拷到内核栈上，刚好盖住被释放的栈帧。盖上之后，攻击者就在内核栈上伪造了一个 <code>rt_mutex_waiter</code>，结构体里的 rb 节点、<code>task</code>、<code>lock</code> 都由攻击者控制。PI 链遍历时那次红黑树 erase，会把一个受约束的指针写到攻击者指定的位置。</p>
+
+<p>在 Linux 上，这已经够拿到 root：覆盖 <code>inet6_protos[IPPROTO_UDP]</code>，用 loopback 的 IPv6 UDP 包劫持控制流，再用 DirtyMode 改 <code>core_pattern</code> 的 mode 位，让内核用 root 执行攻击者的程序。</p>
+
+<p>到了 Android，情况变复杂：kCFI 打开了，控制流劫持没那么自由；KPTI 打开后 prefetch 侧信道也不好用。NebuSec 的 Android 17 版本改走数据面——用同一个受控写去改 <code>ashmem</code> 的 <code>file_operations</code> 表，把它换成 <code>configfs</code> 的 <code>read_iter</code> / <code>write_iter</code>。两个函数原型都是 <code>ssize_t (struct kiocb *, struct iov_iter *)</code>，签名一致，CFI 不会拦；换完之后，<code>ashmem</code> 的 read/write 就变成了受约束的内核读写。再用 <code>pipe_buffer</code> 把读写提升到任意物理地址，最后改 <code>cred</code>、关 SELinux、清 seccomp。</p>
+
+<p>GhostLock 这个故事里有两个数字很说明问题：漏洞从 2011 年的 rtmutex 重构一直活到 2026 年，十五年；NebuSec 在 Linux 上把它做成 97% 稳定、约 5 秒完成提权的利用，拿了 kernelCTF 的奖金。同一套原语随后被移植到 Android 17，按 NebuSec 的说法是第一个公开的 Android 17 root——移植的难点不在「怎么提权」，而在「提权之后怎么在 CFI 和 SELinux 下继续走下去」。</p>
+
+<h4 id="4-2-3-posix-cpu-timer-uaf-64560-98260">4.2.3 POSIX CPU timer UAF：64560 与 98260</h4>
+
+<p>第三类原语来自进程退出和 <code>exec</code> 的边界。</p>
+
+<p>POSIX CPU timer 在 armed 状态下，节点挂在目标任务的 <code>posix_cputimers</code> 红黑树里，同时 timer 持有目标线程 PID 的引用。当一个非 leader 线程执行 <code>execve()</code> 时，<code>de_thread()</code> 会把 leader 的 <code>struct pid</code> 从 <code>PIDTYPE_PID</code> 哈希桶里摘掉，把这个 PID 转给调用线程。此时 <code>pid_task(timer-&gt;it.cpu.pid, PIDTYPE_PID)</code> 返回 NULL，定时器的引用就断了。</p>
+
+<p>正常情况下，<code>begin_new_exec()</code> 会在 <code>de_thread()</code> 之后调用 <code>posix_cpu_timers_exit(me)</code> 清理这些残余节点，所以问题不会暴露。但如果 <code>exec_mmap()</code> 之类的步骤失败，代码会直接跳到 <code>out</code>，跳过清理，任务随后死亡，<code>exit_itimers()</code> 释放 <code>k_itimer</code>——而红黑树里的节点还指向这块已释放的内存。等到父进程 <code>wait4()</code> 回收任务、内核做 <code>cleanup_timerqueue()</code>，<code>rb_erase</code> 就会读到已释放对象的 freepointer，把垃圾指针当作 <code>rb_right</code> 解引用——结果可能是 kernel panic，也可能是一次受控写，取决于堆布局。</p>
+
+<p>CVE-2026-64560 和 CVE-2026-98260 都属于这个族系。前者的竞争窗口只有十几条指令，需要 kprobe 人为制造延迟才抓得稳；后者的窗口由父进程是否 <code>wait4()</code> 决定，理论上可以无限拉长，所以更适合工程化。KSuRoot 的作者在实测记录里写得很直白：v1.0.x 用 64560，「无扰动时 21 次全 miss」；v1.2.0 换 98260 后，「一次跑通，零 panic、零重启」。</p>
+
+<p>三类原语的对比：</p>
+
+<div class="table-wrap"><table><thead><tr><th>原语</th><th>触发条件</th><th>权限要求</th><th>稳定性</th><th>公开时间</th></tr></thead><tbody><tr><td>页缓存写入（DirtyFrag）</td><td>创建 XFRM transform、splice、ESP 解密</td><td>App 可用 API 或 shell</td><td>接近 100%，无竞态</td><td>2026-05</td></tr><tr><td>futex-PI UAF（GhostLock）</td><td>三线程 PI 依赖环 + requeue 回滚</td><td>普通线程/futex</td><td>约 97%，需重试</td><td>2026-05</td></tr><tr><td>POSIX timer UAF（64560/98260）</td><td>非 leader exec + exec_mmap 失败</td><td>shell 进程</td><td>窗口可控，需重试</td><td>2026-07 / 2026-10</td></tr></tbody></table></div>
+
+<h3 id="4-3">4.3 从受控写到任意读写</h3>
+
+<p>三种原语给出的都只是「一次受控写」或「一个受约束的指针写」。要走到 root，还需要三步：泄漏内核地址、伪造合法对象、把写升级成任意读写。</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/06-arb-rw.webp" alt="从一次受控写到任意物理读写" loading="lazy" /></figure>
+
+<p><strong>第一步是 KASLR。</strong> 在 Android 17 的 Pixel 10 上，NebuSec 盯上了 <code>/proc/sys/kernel/random/boot_id</code>：它的 sysctl handler 会把表项 <code>.data</code> 指向的 16 字节格式化成 UUID 字符串。如果攻击者能用受控写把 <code>.data</code> 改成某个内核对象的地址（比如 netfilter 的 <code>loggers[0][1]</code>，它保存着 <code>&amp;nfulnl_logger</code>），再读 <code>boot_id</code>，内核就会把这个指针当 UUID 打印出来。减去该符号在镜像里的固定偏移，就是 KASLR slide。这个技巧和 Project Zero 当年用 <code>sel_fs_type</code> 名字指针泄漏地址是同一个思路，只是换了个出口。</p>
+
+<p><strong>第二步是伪造对象。</strong> 有了 KASLR，攻击者可以把函数表指向真实存在的内核代码。Android 的 kCFI 只比较函数类型的哈希，所以「同签名函数互换」是可行的：<code>ashmem</code> 的 <code>read_iter</code> / <code>write_iter</code> 换成 <code>configfs</code> 的 handler，两个函数类型相同，CFI 放行；<code>ashmem</code> 的 <code>private_data</code> 被当作 <code>configfs_buffer</code> 解释，<code>read()</code> 和 <code>write()</code> 就变成了对内核地址的读写。Android 17 上 <code>ashmem</code> 仍然可以通过 <code>/dev/ashmem&lt;boot_id&gt;</code> 打开，Rust 重写只加固了驱动自身的代码，没有改变 <code>file_operations</code> 表躺在普通内核内存里这件事。</p>
+
+<p><strong>第三步是任意物理读写。</strong> 受约束的内核读写有长度和校验限制，攻击者通常会用 <code>pipe_buffer</code> 再升一级：<code>pipe_buffer</code> 里有一个 <code>struct page *</code>，把它改成任意物理页对应的 <code>page</code>，<code>read</code>/<code>write</code> 管道就等于读写那块物理内存。在 physmap 基址固定的设备上（近年 arm64 上线性映射已经不再随机化），虚拟地址到 <code>page</code> 的换算很直接；即使随机化，也可以用 KernelSnitch 之类的侧信道把基址探出来。</p>
+
+<p>KSuRoot 在 Redmi K90 Max 上用的是另一套等价实现：先用 <code>rb_erase</code> 的受控写改 <code>random_table[4].data</code>，借 <code>boot_id</code> 泄漏 KASLR；再用 264 字节的 <code>k_itimer</code>（order-1）做逐 CPU 的堆喷射；然后伪造一个 <code>miscdevice</code> 接管 <code>misc_list</code>，拿到内核读写；最后用 <code>pipe_buffer</code> 升级到物理地址读写。路径不同，思路一样：<strong>每一个中间原语都只比上一步多一点点能力，最后拼成完整的内核读写。</strong></p>
+
+<h3 id="4-4-cred-seccomp-selinux">4.4 改身份：cred、seccomp、SELinux</h3>
+
+<p>有了任意内核读写之后，拿 root 反而成了整条链里最「手工」的一步：找到当前进程的 <code>task_struct</code>，顺着 <code>cred</code> 指针把权限字段改掉。</p>
+
+<p>这一步通常做四件事：</p>
+
+<ol><li><strong>改 cred</strong>：把 <code>uid</code>、<code>gid</code>、<code>euid</code>、<code>egid</code>、<code>suid</code>、<code>sgid</code>、<code>fsuid</code>、<code>fsgid</code> 全部置 0，把 <code>cap_effective</code>、<code>cap_permitted</code>、<code>cap_inheritable</code>、<code>cap_bset</code>、<code>cap_ambient</code> 五组 capability 全部拉满，清掉 <code>securebits</code> 里可能限制提权的位。</li><li><strong>清 seccomp</strong>：把 <code>seccomp.mode</code> 改成 disabled，清掉 filter，并清掉 <code>thread_info</code> 里的 <code>TIF_SECCOMP</code>。不这么做的话，进程虽然 uid=0，但下一个被 seccomp 拦下的系统调用就会把它杀掉。</li><li><strong>绕 SELinux</strong>：Android 的权限不只看 uid，还看进程的 SELinux 域。<code>untrusted_app</code> 域即使 uid=0，也打不开很多设备节点、加载不了模块。常见做法是改全局 <code>selinux_state</code> 的 <code>enforcing</code> 位，把整个系统切到 permissive，或者直接改当前进程的 SID。</li><li><strong>处理 LSM 钩子</strong>：部分厂商在标准 SELinux 之外还叠了自己的 LSM 或 hook（比如三星的 DEFEX、vivo 的 <code>vr.ko</code> tracepoint），需要在模块初始化时绕过或摘掉。</li></ol>
+
+<p>定位当前进程通常有两种做法：从 <code>init_task</code> 出发遍历 <code>task_struct</code> 链表，用 <code>pid</code> 或 <code>comm</code> 找到自己；或者直接读 <code>current</code>（arm64 上它来自 <code>sp_el0</code>，x86 上来自 per-CPU 的 <code>current_task</code>）。找到之后，改的是 <code>task-&gt;cred</code> 和 <code>task-&gt;real_cred</code> 这两个指针指向的凭证对象——<code>fork()</code> / <code>clone()</code> 时凭证会被继承或复制，要保证子进程也有 root，还得处理 <code>cred-&gt;usage</code> 引用计数，不能只改一半。</p>
+
+<p>为什么非要 permissive？因为下一步要加载内核模块。<code>finit_module()</code> 会经过 LSM 的模块加载检查（SELinux 里对应 <code>kernel_load_module</code> 权限），<code>init_module</code> 还要过 capability 检查；在 enforcing 状态下，即使 uid=0、cap 拉满，域不对照样被拒。临时 root 的通用做法是：先在内核里把 SELinux 关掉，在 permissive 窗口里完成模块加载和挂载，然后由 KernelSU 自己把 SELinux 切回 enforcing。</p>
+
+<p>这也解释了一个经常被问的问题：为什么不能「提权之后直接 <code>insmod</code>」？因为提权改的是 cred，模块加载检查的是域和 LSM 状态。cred 和 SELinux 是两套东西，得分别处理。</p>
+
+<h3 id="4-5-late-load-uid-0-root">4.5 late-load：把 uid 0 接进 root 生态</h3>
+
+<p>拿到 root shell 之后，事情只完成了一半。用户想要的是：管理器里有授权界面，App 能申请 root，Zygisk Next 和 LSPosed 能装，模块能挂载。这些是 KernelSU 提供的用户态与内核态基础设施，不是「一个 root shell」自带的。</p>
+
+<p>KernelSU 有两种加载方式：</p>
+
+<ul><li><strong>early load</strong>：在 boot 镜像里塞入 <code>ksuinit</code>，由 <code>init</code> 第二阶段加载内核模块。这需要解锁 BL、刷入修补过的 boot 镜像，属于持久 root 的路线。</li><li><strong>late load</strong>：系统已经起来之后，由一个已有 root 权限的进程执行 <code>ksud late-load</code>，把 <code>kernelsu.ko</code> 动态加载进正在运行的内核。</li></ul>
+
+<p>late-load 是临时 root 的落点。它把「一次提权」翻译成「一个可用的 root 环境」，流程大致是：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">TEXT</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">exploit shell (uid=0, permissive)</span>
+<span class="line">  └─ ksud late-load --kmi android15-6.6 --package-name me.weishu.kernelsu</span>
+<span class="line">       ├─ init_module(kernelsu.ko)          # 内核模块加载 + 初始化</span>
+<span class="line">       └─ 用户态安装                          # /data/adb/ksu、/system/bin/su、管理器数据</span>
+<span class="line">            └─ su -c id → uid=0, context=u:r:ksu:s0</span></code></pre>
+            </div>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/07-late-load.webp" alt="late-load：把 uid 0 接进 KernelSU 生态" loading="lazy" /></figure>
+
+<p>模块和管理器是配套的。LKM 要按 KMI 编译；<code>ksud</code>、<code>libksud.so</code>、管理器 APK 来自同一个 KernelSU 分支。把 A 分支的 <code>ksud</code> 和 B 分支的内核模块混用，会出现 uapi 不匹配，管理器一直提示「需要更新内核」。有些工具会在运行时从用户已安装的管理器 APK 里提取 <code>ksud</code> 和模块，既避免自己分发 GPL 代码，也避免版本错配——代价是用户必须先装一个匹配的管理器。</p>
+
+<p>几个容易踩的细节，公开文档和实测记录里都反复出现：</p>
+
+<p><strong>第一，late-load 不是 root 方法。</strong> 它要求执行者已经在 root 态、SELinux 已经 permissive、<code>ksud</code> 已经就位。没有前面的内核提权，它连 <code>CAP_SYS_MODULE</code> 都拿不到。</p>
+
+<p><strong>第二，加载和安装是两件事。</strong> <code>init_module()</code> 只负责把 <code>.ko</code> 塞进内核；<code>/data/adb/ksu</code>、<code>/system/bin/su</code>、管理器的授权数据库是 <code>ksud</code> 用户态阶段创建的。只加载模块、不跑用户态安装，结果就是「模块在，<code>su</code> 永远不出现」。把这两步拆开手动执行，是早期教程里最常见的坑。</p>
+
+<p><strong>第三，vermagic 对不上不一定加载不了。</strong> KernelSU 用 kallsyms 动态解析符号，加上 bootstrap capsule 注入，不走标准的 <code>modversions</code> 校验。有实测记录里，<code>.ko</code> 内嵌的 vermagic 是 <code>6.6.127-4k-...-dirty</code>，内核是 <code>6.6.118-android15-8</code>，按标准 <code>insmod</code> 推断必拒，实际加载成功。判断能不能加载，要看 KMI 和实测记录，不能只看版本字符串。</p>
+
+<p><strong>第四，App 里的「越狱」按钮经常失败。</strong> 有实测记录显示，App 域（<code>untrusted_app_27</code>）的 seccomp 白名单里没有 arm64 的 <code>reboot</code> 系统调用（syscall 142），内核会直接发 <code>SIGSYS</code> 把进程打死。所以 late-load 通常要由 adb shell 或 root 域代跑，App 只负责编排。这也解释了为什么很多工具坚持要 Shizuku——它提供的正是那个「能跑命令的 shell 域」。</p>
+
+<p><strong>第五，late-load 之后 SELinux 会自动切回 enforcing。</strong> 这是 KernelSU 的设计行为，不是故障。切回之后，之前用 permissive 窗口做的 <code>runcon</code> 换域、临时 <code>su</code> socket 都可能失效，后续操作要走 <code>/system/bin/su</code>。</p>
+
+<p>至于「jailbreak（越狱）模式」，可以把它理解成 late-load 的产品化外壳。KernelSU v3.2.0 同时引入了 late-load 和 jailbreak；后者的目标场景是「没法改 boot 镜像，但想在这台设备上用一次 KernelSU」。社区资料里提到的 Magica 路径，走的是 Android 的 <code>ZygotePreload</code> 机制——在特权应用上下文里拿到代码执行，从而获得加载内核模块的条件。它和 late-load 是同一条路线的两个侧面：一个解决「怎么把模块装进去」，一个解决「在装不进去的设备上，怎么先拿到装的条件」。v3.3.1 之后，jailbreak 模式下管理器不再提供内核安装选项，官方的意图很清楚：这条路只负责「当前这次开机」。</p>
+
+<h3 id="4-6">4.6 生命周期：会话什么时候结束</h3>
+
+<p>临时 root 的「临时」不是营销词，是机制决定的。</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/08-lifecycle.webp" alt="会话的生命周期：软重启保留，完整重启归零" loading="lazy" /></figure>
+
+<ul><li><strong>软重启</strong>（soft reboot）：只重启 Android 框架（<code>system_server</code> 及其托管的服务），内核没有换，已加载的 LKM、页缓存里的修改、内核里的 cred 都还在。root 会保留。</li><li><strong>完整重启</strong>（reboot / 关机再开）：内核重新从 boot 分区加载，LKM 卸载，页缓存清空，cred 恢复原厂状态。root 消失。</li><li><strong><code>/data</code> 里的残留不会自动消失</strong>：<code>/data/adb/ksu</code>、模块文件、<code>ksud</code> 二进制都还在，但没有东西去加载它们。下次想用，得重新利用漏洞、重新 late-load。</li></ul>
+
+<p>有些工具会做「半持久化」：首次临时 root 之后，把一个系统 UID 的 App 写进 <code>packages.xml</code>，让它开机自启，每次开机自动重跑 exploit。DFReroot 就是这么干的，作者在 Galaxy S26 One UI 8.5 上测过。但它的本质仍然是「每次开机重新利用一次漏洞」——内核和 boot 分区还是原厂的，只要漏洞被补掉，这条自动化链路就断了。</p>
+
+<p>所以「没有 BL 解锁，就没有持久 su」这句话是准确的。所有号称「临时转永久」的方案，要么在利用厂商自己的持久化机制打擦边球，要么只是把「重跑」自动化了。</p>
+
+<h3 id="4-7-lpe-root">4.7 不是每个 LPE 都能变成临时 root</h3>
+
+<p>内核提权漏洞很多，能变成「一键临时 root」的很少。把筛选条件列出来，会发现门槛比想象中高：</p>
+
+<ol><li><strong>触发要稳定。</strong> 竞态类漏洞（GhostLock）需要重试，工具必须接受失败率；无竞态类（DirtyFrag）更适合做成产品。98260 之所以在 10 月成为主力，就是因为它的窗口由父进程是否 <code>wait4()</code> 决定，可以人为拉长。</li><li><strong>要能升级成任意读写。</strong> 只能改一个 <code>cred</code> 字段的漏洞，没法继续加载模块；必须有「受控写 → KASLR 泄漏 → 对象伪造 → 任意读写」的完整路径。</li><li><strong>要能过 SELinux。</strong> 很多 LPE 在 Linux 上能 root，在 Android 上卡在 SELinux：uid=0 但域不对，还是加载不了模块、挂不了文件系统。</li><li><strong>要能加载 LKM。</strong> 内核必须允许模块加载，<code>CONFIG_MODULES</code> 要开，模块签名策略要能被 permissive 绕过，KMI 要能匹配。</li><li><strong>要有设备适配。</strong> 偏移、页大小、厂商 hook、内核构建，每一样都可能让利用失败。一个漏洞在 A 机型上 97% 稳定，在 B 机型上可能一次都过不了。</li></ol>
+
+<p>这也解释了为什么 2026 年「能用的漏洞」和「公开的漏洞」数量差这么多：大部分 LPE 停在第一步或第三步，能走完全程的，才会变成工具。</p>
+
+<h2 id="5-android">
+              5. 为什么高版本 Android 不是障碍
+              <a class="anchor" href="#5-android">链接到此标题</a>
+            </h2>
+
+<p>每次聊到临时 root，总会有人说：「Android 16/17 不是把路都堵死了吗？」</p>
+
+<p>这个说法对了一半。高版本 Android 确实堵了很多路，但堵的是另外一些路。</p>
+
+<figure class="prose-figure"><img src="/images/android-temp-root/09-hardening.webp" alt="防线与绕法：每一层守的东西不一样" loading="lazy" /></figure>
+
+<h3 id="5-1">5.1 加固的目标错位</h3>
+
+<p>Android 近几年的安全投入集中在三个方向：</p>
+
+<ul><li><strong>启动链</strong>：AVB、dm-verity、回滚索引、boot 分区签名。目标是「设备只能运行厂商签名的系统」。</li><li><strong>应用隔离</strong>：SELinux 域、seccomp、权限模型、scoped storage。目标是「一个 App 不能越权访问别的 App 和系统」。</li><li><strong>漏洞缓解</strong>：kCFI、KASLR、KPTI、MTE、PAC、零初始化栈、FORTIFY。目标是「即使有内存破坏，也难利用」。</li></ul>
+
+<p>临时 root 打的是另一类目标：<strong>内核里那些能被合法 syscall 触发的逻辑漏洞</strong>。前三个方向的加固，不会让内核 bug 消失；它们只是让利用变难。而 2026 年的公开研究，恰好把「变难」的部分也补上了。</p>
+
+<h3 id="5-2-gki-kmi">5.2 GKI 与 KMI：一份模块覆盖一个代际</h3>
+
+<p>Android 的通用内核镜像（GKI）把内核按代际拆成几个分支：</p>
+
+<div class="table-wrap"><table><thead><tr><th>Android 版本</th><th>GKI 分支</th><th>典型内核</th></tr></thead><tbody><tr><td>Android 12</td><td>android12-5.10 / android12-5.4</td><td>5.10 / 5.4</td></tr><tr><td>Android 13</td><td>android13-5.15 / android13-5.10</td><td>5.15 / 5.10</td></tr><tr><td>Android 14</td><td>android14-6.1 / android14-5.15</td><td>6.1 / 5.15</td></tr><tr><td>Android 15</td><td>android15-6.6</td><td>6.6</td></tr><tr><td>Android 16</td><td>android16-6.12</td><td>6.12</td></tr><tr><td>Android 17</td><td>android17-6.18</td><td>6.18</td></tr></tbody></table></div>
+
+<p>同一个 GKI 分支下，内核模块的 KMI（Kernel Module Interface）保持一致。于是「一份漏洞利用 + 一个按 KMI 编译的 <code>.ko</code>」可以覆盖一批设备，而不是一台。2026 年的工具普遍按 KMI 发模块：<code>android12-5.10</code>、<code>android13-5.15</code>、一直到 <code>android17-6.18</code>。这大幅降低了移植成本，也是临时 root 能在一个月内铺到几十个机型的原因。</p>
+
+<p>但 KMI 相同不代表设备相同。页大小（4 KB / 16 KB）、厂商 hook、内核偏移、slab 参数、SELinux 策略、内核构建选项都可能不同。两个同样跑 <code>android15-6.6</code> 的手机，一个能一把过，另一个可能直接 panic。这就是为什么所有靠谱的工具都会校验 <code>uname -r</code>、指纹和 KMI，并且为每个机型维护 profile——「一份模块」解决的是内核代码的兼容性，不是设备的兼容性。</p>
+
+<h3 id="5-3">5.3 缓解措施与绕法</h3>
+
+<p>把 2026 年公开研究里用到的绕法逐项列出来，会更清楚「高版本更安全」到底安全在哪：</p>
+
+<p><strong>kCFI。</strong> 它比较的是间接调用目标函数类型的哈希，不是函数身份。所以「同签名函数互换」是它的缝：<code>ashmem</code> 的 <code>read_iter</code> / <code>write_iter</code> 和 <code>configfs</code> 的 handler 签名一样，换过去 CFI 不管。这个技巧最早来自 Project Zero 对在野 Android 利用的分析，2026 年依然是数据面提权的主力。Rust 重写 <code>ashmem</code> 也没用——被换的是 VFS 层的 <code>file_operations</code> 表，不是驱动内部逻辑。</p>
+
+<p>CFI 还有一条更麻烦的路：如果攻击者能在内核里喷射可执行内存（比如利用 cBPF JIT，它不受 <code>unpriv_bpf_disabled</code> 和 SELinux 的 bpf 黑名单限制），理论上可以伪造合法的函数哈希。2026 年的主流工具没有走这条路，因为它对内核配置和 JIT 行为依赖太强，不如数据面稳定。</p>
+
+<p><strong>KASLR / KPTI。</strong> KASLR 的缝在「泄漏」：<code>boot_id</code> 的 sysctl handler、<code>/proc/self/mounts</code> 的文件系统名、netfilter 的 logger 指针，都是把内核地址当数据读出来的出口。KPTI 让 prefetch 侧信道不好用，但 KernelSnitch 这类「软件级」侧信道仍然可用；arm64 上线性映射基址不再随机化，更是省掉了不少工作。</p>
+
+<p><strong>SELinux / seccomp。</strong> 这两层保护的是「进程能做什么」，而攻击者拿到内核读写之后，可以直接改 cred、改 SELinux 状态、清 seccomp。它们能拦住「没有内核漏洞的越权尝试」，拦不住「已经拿到内核任意写」的攻击者。反过来说，它们确实提高了触发门槛：如果进程在 <code>untrusted_app</code> 域里，有些 bug 的触发 syscall 根本发不出去——这也是 Shizuku 存在的意义。</p>
+
+<p><strong>MTE / PAC。</strong> 这两类硬件缓解会显著提高利用成本，尤其是 MTE 对 UAF 的检测。但它们的覆盖有限：不是所有 SoC 都开，开了也不是所有内核路径都带标签检查。2026 年的工具仍然以「避开 MTE 触发路径」或「接受更低成功率」的方式在部分机型上工作。</p>
+
+<p><strong>16 KB 页大小。</strong> 这不是安全缓解，但它是移植的实际门槛。内核偏移、slab 布局、对齐假设都会变，一个为 4 KB 页编译的 payload 在 16 KB 页设备上大概率不工作。Android 15 之后新设备逐步转向 16 KB，这也是为什么工具的支持列表看起来总是「缺几台新机」。</p>
+
+<h3 id="5-4-dm-verity">5.4 页缓存是 dm-verity 的盲区</h3>
+
+<p>值得单独讲一下 dm-verity，因为它是「系统分区不可改」这个直觉的来源。</p>
+
+<p>dm-verity 的哈希树在块设备层：每当内核从 <code>system</code> 分区读一个块，dm-verity 会先算这个块的哈希，再和树上的值比对。对不上就返回 I/O 错误。这套机制保证「从磁盘读出来的内容」是厂商签名的。</p>
+
+<p>但 page cache 在 dm-verity 之上。一个文件被读进内存之后，后续的读写都发生在 page cache 里，不会再走块设备层。DirtyFrag 改的正是这块内存：它没有让磁盘上的字节发生变化，也没有让 dm-verity 报错，但执行流读到的是被改过的页。等系统下次真正从磁盘重新读这个文件（比如 <code>drop_caches</code> 之后），修改就消失了——攻击者也不需要它持久，因为 root 已经在内存里了。</p>
+
+<p>这也是「临时 root 不写盘」的技术含义：它不是「不想写」，而是「写盘会破坏验证链，而改内存不会」。只要 root 会话只活在本次开机内，page cache 的修改就不需要面对任何持久化校验。</p>
+
+<p>如果攻击者真的把修改写回磁盘，会发生什么？dm-verity 在下次读这个块时会发现哈希不匹配，返回 I/O 错误；AVB 会在下次启动时发现 boot 或系统镜像的哈希不对，直接拒绝启动或进入 recovery。换句话说，写盘不是「更难」，而是在锁 BL 的设备上根本不可行。临时 root 的整个设计，都是围绕「不写盘」展开的。</p>
+
+<h3 id="5-5-spl">5.5 补丁滞后：SPL 不等于内核已修</h3>
+
+<p>Android 的安全补丁级别（SPL）是一个字符串，不是一份保证。</p>
+
+<p>KSuRoot 的作者在文档里记录过一个很典型的例子：Redmi K90 Max 的 HyperOS 4.0.5.0 OTA 把 SPL 升到了 2026-10-01，但他把 OTA 的 <code>boot</code> 分区解出来对比，发现内核二进制和 4.0.0.14 完全一样——版本串、git hash、ABO build id、编译时间全部相同，CVE-2026-64560 的上游修复也不在里面。换句话说，系统版本更新了，安全补丁级别更新了，内核漏洞还在。</p>
+
+<p>这不是个例。厂商的内核更新节奏和 Android 框架更新节奏经常不同步：框架补丁每月推，内核补丁按机型、按芯片平台、按厂商排期走；有的厂商会 backport，有的不会；有的改了内核但不改 KMI 版本号。于是「我的手机是最新系统」和「我的内核没有这个漏洞」是两件事。</p>
+
+<p>这也解释了 9 月到 10 月的反弹：9 月补丁修掉了一批当时在用的链路，但新公开的 CVE-2026-98260（10 月 6 日）还没有下放到大多数机型，于是 10 月的新工具在未打补丁的内核上继续工作。</p>
+
+<p>下面是几个关键漏洞的内核修复版本，可以用来判断一台设备大概在什么位置：</p>
+
+<div class="table-wrap"><table><thead><tr><th>内核分支</th><th>DirtyFrag（43284）</th><th>GhostLock（43499）</th><th>POSIX timer（98260）</th></tr></thead><tbody><tr><td>5.10</td><td>5.10.255</td><td>5.10.261</td><td>—</td></tr><tr><td>5.15</td><td>5.15.205</td><td>5.15.212</td><td>—</td></tr><tr><td>6.1</td><td>6.1.171</td><td>6.1.175</td><td>6.1.191</td></tr><tr><td>6.6</td><td>6.6.138</td><td>6.6.140</td><td>6.6.158</td></tr><tr><td>6.12</td><td>6.12.87</td><td>6.12.86</td><td>6.12.112</td></tr><tr><td>6.18</td><td>6.18.28</td><td>6.18.27</td><td>6.18.54</td></tr><tr><td>7.x</td><td>7.0.5</td><td>7.0.4</td><td>7.2.8（7.3 不受影响）</td></tr></tbody></table></div>
+
+<p>这张表只能当参考。厂商会打乱 backport 顺序，也可能改了代码却不改版本号；最终能不能打，要看具体机型的实测。</p>
+
+<h3 id="5-6">5.6 漏洞窗口的经济学</h3>
+
+<p>把上面几节合起来，会得到一个很朴素的结论：临时 root 的可用性，等于「漏洞公开」到「厂商把补丁下放到你的机型」之间的时间差。</p>
+
+<p>这个窗口在 2026 年特别宽，原因是多方面的：漏洞供给密集（同一时间有三四组可用链）、公开研究质量高（有完整 writeup 和可复现 PoC）、工具链成熟（late-load 把最后一步做成了产品）、设备碎片化严重（同一漏洞在不同机型上的补丁时间差几个月）。对攻击者来说，只要还有一个机型没打补丁，工具就值得维护；对厂商来说，只要还有一个漏洞没修，下个月就可能有新的利用。</p>
+
+<p>这也是为什么「Android 版本号」不是判断依据。Android 17 的 Pixel 10 在 7 月就被 GhostLock 打穿了；一些跑 Android 14 的老机型反而因为内核分支太老、没人做适配而「安全」。安全性和版本号的关系，比大多数人想的要弱。</p>
+
+<h2 id="6-2026">
+              6. 为什么偏偏是 2026 年
+              <a class="anchor" href="#6-2026">链接到此标题</a>
+            </h2>
+
+<p>如果只看技术，临时 root 的每一块积木都不新：页缓存写入在 Dirty Pipe 时代就有，futex UAF 在 Linux 里躺了十五年，KernelSU 的 LKM 加载也不是 2026 年才有的。真正让它变成大众话题的，是三个条件在 2026 年同时成立。</p>
+
+<p><strong>第一，漏洞供给足够密集，而且都指向「任意写」。</strong> 2026 年上半年，DirtyFrag 和 GhostLock 相继公开；下半年，POSIX timer 的两个 UAF 补位。它们的共同点不是「能提权」，而是「能稳定地给出一个可工程化的写原语」。对做工具的人来说，这比「能弹 root shell」重要得多——有了任意写，后面的 cred、SELinux、KSU 加载都是可复用的工程。</p>
+
+<p><strong>第二，加载器成熟了。</strong> KernelSU v3.2.0 的 late-load 和 jailbreak 模式，把「内核模块加载 + 用户态安装 + 管理器授权」打包成了标准流程。在这之前，每个做临时 root 的人都得自己解决「怎么让 KernelSU 在没改 boot 镜像的内核上跑起来」；在这之后，这是一条命令。社区工具只需要负责「拿到 root」和「调用 ksud」，剩下的交给上游。</p>
+
+<p><strong>第三，需求被厂商自己推高了。</strong> 2025 年 7 月，三星在 One UI 8 上移除了 Bootloader 解锁，而且是全球范围；一加把 BL 解锁改成了审核制；小米的解锁要社区等级和等待期。与此同时，银行、支付、游戏的风控越来越严，解 BL 之后的「不干净环境」越来越难混。用户面对的选择变成了：要么放弃 root，要么接受解 BL 的代价（清数据、熔断 Knox、保修扯皮），要么试试临时 root。</p>
+
+<p>临时 root 在这个选择题里的位置很微妙：它不清数据、不熔断 Knox、Play Integrity 看起来正常，代价是重启后重来。对「任务型」用户——想装个去广告模块、改个温控、导一次数据——这个交换是划算的。对需要 root 常驻的模块党，它就不划算了。</p>
+
+<p>还有一个容易被忽略的推手：分发方式变了。2026 年的工具大量通过 B 站视频、酷安帖子、网盘链接传播；教程把「Shizuku + 无线调试 + 双机 OTG」这套免电脑流程磨得很顺；甲壳虫 ADB 这类工具让「没有电脑」不再是门槛。技术门槛和分发门槛同时下降，才出现了国庆期间一周三十多条视频的场面。</p>
+
+<p>反过来说，这种分发方式也是风险来源。一个能读写内核的二进制，从网盘下载、没有源码、没有签名校验，等于把手机底层权限交给陌生人。后文会专门讲这一点。</p>
+
+<h2 id="7">
+              7. 设备与内核矩阵
+              <a class="anchor" href="#7">链接到此标题</a>
+            </h2>
+
+<p>临时 root 不是一个「通用方案」，而是一堆按机型维护的 profile。同一个漏洞，在不同设备上的触发条件、偏移、失败模式都可能不一样。</p>
+
+<p>2026 年公开工具和社区记录里出现过的覆盖面，大致是这样：</p>
+
+<div class="table-wrap"><table><thead><tr><th>平台 / 品牌</th><th>公开记录里出现过的机型</th><th>常见链路</th><th>主要限制</th></tr></thead><tbody><tr><td>三星 Galaxy（骁龙）</td><td>S24 / S25 / S26 部分型号、Z Fold / Flip、A 系列部分</td><td>DirtyFrag、GhostLock、98260（SamTimer、Time-My-Galaxy 等）</td><td>Knox 不熔断；Exynos 不在支持范围；S26 对 GhostLock 免疫；固件窗口很窄</td></tr><tr><td>Google Pixel</td><td>Pixel 6 ~ 11</td><td>GhostLock、98260（Root My Pixel、TimerRoot）</td><td>需要 Shizuku；重试次数多；部分 profile 只在 QEMU 里验证过</td></tr><tr><td>一加 / OPPO / realme</td><td>一加 15 / Ace 系列、Find X8 / X8s、Find N2、GT7 Pro 等</td><td>GhostLock、98260（Shark / Shark-Moto）、DirtyFrag</td><td>ColorOS 版本敏感；部分机型要处理厂商 hook</td></tr><tr><td>vivo / iQOO</td><td>X200 系列、iQOO Neo 等</td><td>GhostLock、DirtyFrag（DirtyFalg-vr）</td><td><code>vr.ko</code> tracepoint hook 需要专门 disarm；要关「停止限制子进程」</td></tr><tr><td>小米 / Redmi</td><td>小米 17 Pro Max、Redmi K90 Max、Note 14 等</td><td>98260（KSuRoot、Shark）、GhostLock</td><td>机型与指纹校验严格；OTA 可能不换内核，也可能换</td></tr><tr><td>荣耀 / 摩托罗拉 / Nothing / 其他</td><td>荣耀 80 GT / 80 Pro、Moto G 系列、Nothing Phone (3a) 等</td><td>GhostLock、98260 单机型 port</td><td>覆盖零散，依赖个人移植</td></tr><tr><td>天玑平台 / 华为鸿蒙</td><td>主流机型基本缺席</td><td>—</td><td>平台差异大、社区适配少；个别 MTK 设备（Fire 平板等）有分支</td></tr><tr><td>老设备（4.x / 5.4）</td><td>少量 Adreno GPU 链路</td><td>CVE-2025-21479 等</td><td>固件太老才可用；新批次已修</td></tr></tbody></table></div>
+
+<p>内核版本的门槛更直接：2026 年这波的主力是 <strong>6.6 / 6.12 / 6.18</strong>，5.10 / 5.15 有部分移植（GhostLock 在部分 5.10 机型上跑通过），4.x 只有极少数分支还有人在维护。看到「安卓 14 以上、6.6 内核基本都在首批名单」这种说法，要理解它的准确含义是「这一条漏洞路径覆盖到的机型」，不是「所有安卓 14 设备」。</p>
+
+<h3 id="cve">为什么同一个 CVE，不同机型结果差很多</h3>
+
+<p>即使 KMI 相同，下面这些差异也会让利用成功或失败：</p>
+
+<ul><li><strong>内核偏移</strong>：<code>task_struct</code>、<code>cred</code>、<code>selinux_state</code>、<code>misc_list</code> 的位置都随构建变化。所有偏移都是针对某一版内核二进制量出来的，换个构建就可能失效。</li><li><strong>页大小</strong>：4 KB 和 16 KB 页的设备，slab 布局、对齐、<code>pipe_buffer</code> 的页索引逻辑都不同。</li><li><strong>厂商 hook</strong>：三星的 DEFEX、vivo 的 <code>vr.ko</code>、部分厂商的 LSM，会在关键路径上插检查或 tracepoint，需要额外处理。</li><li><strong>SELinux 策略</strong>：同样是 <code>untrusted_app</code>，不同厂商的策略可能允许或禁止某些 syscall / 设备节点。</li><li><strong>内核构建选项</strong>：<code>CONFIG_FUTEX_PI</code>、<code>CONFIG_POSIX_TIMERS</code>、<code>CONFIG_KALLSYMS</code>、<code>CONFIG_MODULES</code>、<code>CONFIG_STATIC_USERMODEHELPER</code> 都会影响链路。</li><li><strong>OTA 行为</strong>：有的 OTA 会重编内核，有的不会；有的会改 KMI 版本号，有的不改。</li></ul>
+
+<p>所以「支持列表」的正确读法是：<strong>某个人在某个具体型号、具体固件、具体内核上成功过。</strong> 它不是承诺，也不是「同系列都能用」。工具要求校验 <code>uname -r</code> 和指纹，不是保守，而是因为偏移错了的后果可能是 kernel panic，而不是一个优雅的报错。</p>
+
+<h2 id="8">
+              8. 代价与边界
+              <a class="anchor" href="#8">链接到此标题</a>
+            </h2>
+
+<p>临时 root 的宣传语通常强调「不清数据、不熔断 Knox、重启就恢复」，这些话都对，但它们省略了另一半。</p>
+
+<h3 id="8-1">8.1 稳定性与砖</h3>
+
+<p>这是内核内存利用，不是用户态提权。失败模式包括：kernel panic、RCU stall、slab 污染、悬空对象、二次触发时踩到上一次的残留。</p>
+
+<p>一个很具体的例子来自 GhostRoot 的更新日志：2026 年 11 月 3 日早上，第一次利用成功、KernelSU 上线；一分钟后，第二次触发没有被去重逻辑拦住，在已经被污染的堆上又写了一次，触发 RCU stall，而设备 cmdline 里开着 <code>panic_on_rcu_stall=1</code>，系统直接走 <code>PS_HOLD</code> 硬复位。日志里连时间戳都留着：06:57:41 成功，06:58:37 二次开火，06:59:52 硬复位。</p>
+
+<p>KSuRoot 的文档写得更直接：exploit 中途失败时，虽然会打印「内核状态已恢复」，但伪造的 <code>miscdevice</code> 节点并没有从 <code>misc_list</code> 里摘干净，指向的内存已经被释放。这时候手机看起来一切正常，<code>getenforce</code> 还是 Enforcing，<code>boot_id</code> 也没变；但如果直接再点一次「开启」，下一次 <code>misc_open</code> 遍历链表就会踩到已释放内存，直接 panic。所以工具会检查「上次失败且没重启」的状态，检测到就拒绝执行，要求先重启。</p>
+
+<p>砖的风险也真实存在。BL 锁着的时候，fastboot 不能刷机，救援通道比解 BL 的设备窄得多：高通设备理论上可以进 EDL/9008，但需要能用的 firehose 和授权；三星设备要进 Download 模式需要厂商的授权字节，部分工具会在 root 期间改写一个授权位，让本次开机内可以进 Odin——这也是为什么它把「Odin 访问」做成了工具里的一个开关，而不是默认能力。一旦在临时 root 期间写坏了持久分区，下一次开机 verified boot 不过，设备就起不来，而常规官方渠道未必愿意处理。</p>
+
+<p>社区里有一条默认红线：<strong>临时 root 期间，不碰系统分区，不刷任何要持久生效的东西。</strong> 装模块、改运行时参数可以；写分区、改 <code>packages.xml</code>、动 boot 相关的东西，先想清楚失败后怎么救。</p>
+
+<h3 id="8-2">8.2 信任：把内核权限交给谁</h3>
+
+<p>这是我认为最被低估的风险。</p>
+
+<p>一个临时 root 工具需要拿到内核读写权限。它可以是开源的、可审计的、构建流程透明的；也可以是网盘里的一个 APK，来源不明、没有签名校验、没有源码。后者一旦被植入后门，你给它的不是「一次 root」，而是「一个能读写内核的 rootkit」，而且它可以在你不知情的情况下持久化——比如写进 <code>/data</code>、改 <code>packages.xml</code>、甚至利用它拿到的内核权限做更过分的事。</p>
+
+<p>2026 年的分发环境里，这类东西不少：同一个「月虹提权助手」被三个不同账号在几天内各发一遍；「优化版 Shizuku」「内置 ADB 版 Shizuku」在社区里流传，实测有假包；还有大量「仅展示不外传」的封闭工具。对普通用户来说，最实际的一条判断标准是：<strong>能不能看到源码、能不能自己构建、构建产物和发布包能不能对上。</strong> 三条都不满足的，不要装在自己的主力机上。</p>
+
+<h3 id="8-3">8.3 检测：环境干净不等于不被发现</h3>
+
+<p>第 2 节说过，临时 root 不改 BL 状态和 verified boot 状态，所以 Play Integrity 这类基于系统状态的检查会认为环境正常。但这只是「系统 API 视角」。</p>
+
+<p>具体能查的痕迹不少：KernelSU 管理器包名与进程、<code>/system/bin/su</code> 或 <code>/data/adb/ksu</code> 的存在、异常的内核模块列表、<code>/proc/mounts</code> 里的 overlay 挂载、<code>getprop</code> 里的调试属性、内核符号与官方镜像的差异，以及某些系统调用行为的变化。检测端还会做交叉验证：BL 状态是绿的，但内核行为异常，本身就是可疑信号。</p>
+
+<p>银行、支付、游戏的风控不会只看 Play Integrity，它们会做自己的 root 检测、完整性检测、行为检测。KernelSU 一侧也在做隐藏（susfs、随机化包名、隐藏挂载），检测端则在更新特征库。这是长期军备竞赛，不存在「一次配置永久过」。</p>
+
+<p>更现实的问题是：为了过检测去装来路不明的「隐藏模块」「过检测配置」，本身就是在扩大攻击面。风控误伤的代价（账号冻结、支付拦截）通常比 root 带来的便利更高。</p>
+
+<h3 id="8-4-ota">8.4 保修、OTA 与法律</h3>
+
+<ul><li><strong>OTA</strong>：系统更新可能换内核，也可能不换。换了内核，当前的 exploit 和模块可能失效，甚至因为模块与新内核不兼容而 bootloop。开了 autorun 的设备尤其要小心：一个坏模块可以让它每次开机都重启。</li><li><strong>保修</strong>：临时 root 不改 BL，理论上不触发厂商的解锁记录，但「设备被修改过」这件事在售后检测里未必藏得住；不同厂商、不同网点的判定也不一样。</li><li><strong>数据</strong>：虽然不清数据，但 panic、硬复位、bootloop 都可能丢未保存的内容。动手前备份是底线。</li><li><strong>法律与合规</strong>：只在自己的设备上折腾；不要用这类能力去绕过风控、改机注册、薅补贴。工具本身是中性的，怎么用不是。</li></ul>
+
+<p>把几条账放在一起对比：</p>
+
+<div class="table-wrap"><table><thead><tr><th>账</th><th>临时 root</th><th>解 BL + 持久 root</th></tr></thead><tbody><tr><td>数据</td><td>不清空，但失败可能丢未保存数据，极端情况变砖</td><td>解锁即清空</td></tr><tr><td>资格</td><td>Knox 不熔断，Play Integrity 基本正常</td><td>熔断 Knox（三星），部分设备失去支付/安全文件夹</td></tr><tr><td>账号</td><td>仍可能被 root 检测识别，风控误伤自负</td><td>同样被检测，且 BL 解锁本身就是信号</td></tr><tr><td>时间</td><td>每次重启重来；失败后要重启再试</td><td>一次到位，但每次 OTA 要维护</td></tr></tbody></table></div>
+
+<h3 id="8-5">8.5 它适合谁</h3>
+
+<p>如果你的需求是「装个模块、去个广告、导一次数据、改个温控」，而且能接受每次重启重来，临时 root 是一个合理的选择——前提是用开源、可审计的工具，并且接受它可能失败、可能重启、可能变砖。</p>
+
+<p>如果你的需求是「root 常驻、装一堆模块、换内核、刷 ROM」，临时 root 不是替代品。它不提供持久 su，不提供自定义内核，也不提供恢复能力。该解 BL 还是得解 BL。</p>
+
+<p>如果你只是想去广告、冻结应用、管通知，Shizuku 这一层就够了，不需要碰内核。这句话在 2026 年依然成立，而且比以往更值得重复：<strong>能不下探到内核，就不要下探到内核。</strong></p>
+
+<h2 id="9">
+              9. 尾声：锁的语义在变
+              <a class="anchor" href="#9">链接到此标题</a>
+            </h2>
+
+<p>回头看维修台上那台 S25。它同时满足两个事实：Bootloader 锁着，<code>su</code> 能用。这不是悖论，而是因为「锁」和「root」描述的是两个不同的层面。</p>
+
+<p>过去十几年，BL 锁在事实上承担了「防 root」的角色，因为那时 root 的唯一实用路径是改启动链。现在这条路径被绕开了：root 可以在运行中的内核里发生，不需要启动链的配合。BL 锁没有失效，它只是不再是 root 的充分必要条件——它变成了「防持久化、防改机、防刷 ROM」的锁。</p>
+
+<p>这也是为什么这波工具都强调「临时」。不是做不到持久，而是持久需要写盘，写盘会破坏验证链，验证链一破，BL 锁和 AVB 就会在下次开机时把设备拦下来。临时 root 的「临时」是机制约束，不是产品选择。</p>
+
+<p>对做安全的人来说，2026 年这波东西的价值不在于「又一个 root 工具」，而在于它把一条完整的攻击链拆开摆在了台面上：一个页缓存写、一个 futex UAF、一个 timer UAF，加上 CFI 的同签名缝、KASLR 的 boot_id 泄漏、late-load 的模块加载。每一块单看都不新，组合起来就是一个可复现的工程。</p>
+
+<p>对普通用户来说，更值得记住的是三件事：</p>
+
+<ol><li><strong>漏洞是消耗品。</strong> 每个 CVE 都有窗口期，窗口由「公开」到「厂商下放补丁」决定。今天能用的工具，下个月可能就失效；今天没修的机型，下个月可能就修了。</li><li><strong>root 在分层。</strong> 获取变便宜了（免解锁、免电脑、一键），隐藏和持久仍然贵。想清楚自己要的是哪一层，比追工具更重要。</li><li><strong>BL 锁的含义在变。</strong> 它越来越像「防持久化」而不是「防 root」。这对厂商的威胁模型、对用户的选择、对检测端的设计，都会产生长期影响。</li></ol>
+
+<p>这波热潮大概不会让 root 回到 2016 年。它做的是另一件事：把 root 拆成获取、隐藏、持久三层，各卖各的价。临时 root 把「获取」这一层的价格打了下来，另外两层没动。对一部分人来说，这已经够用；对另一部分人来说，缺口还在那里。窗口会关，但下一扇窗很快会开——只要内核还有 bug，只要厂商还在锁 BL，这个循环就不会停。</p>
+
+<h2 id="a">
+              附录 A：术语表
+              <a class="anchor" href="#a">链接到此标题</a>
+            </h2>
+
+<div class="table-wrap"><table><thead><tr><th>术语</th><th>含义</th></tr></thead><tbody><tr><td>BL / Bootloader</td><td>启动引导程序；锁定状态下拒绝刷入未签名镜像</td></tr><tr><td>AVB</td><td>Android Verified Boot，验证启动镜像签名与哈希</td></tr><tr><td>dm-verity</td><td>块设备层的哈希树校验，保护 system/vendor 分区</td></tr><tr><td>GKI</td><td>Google 通用内核镜像，按 Android 版本分代</td></tr><tr><td>KMI</td><td>Kernel Module Interface，同一 GKI 分支下模块的兼容接口</td></tr><tr><td>LKM</td><td>Loadable Kernel Module，可加载内核模块</td></tr><tr><td>late-load</td><td>系统启动之后，由 ksud 把内核模块加载进运行中的内核</td></tr><tr><td>jailbreak / Magica</td><td>KernelSU 的免 boot 镜像加载路径，依赖用户态先拿到加载条件</td></tr><tr><td>Shizuku</td><td>通过 ADB/无线调试启动的 shell 级服务，给 App 借用 shell 权限</td></tr><tr><td>SELinux 域</td><td>Android 的强制访问控制上下文，如 <code>untrusted_app</code>、<code>u:r:ksu:s0</code></td></tr><tr><td>cred</td><td>内核里的进程凭证结构体，保存 uid/gid/capability</td></tr><tr><td>KASLR</td><td>内核地址空间布局随机化</td></tr><tr><td>kCFI</td><td>内核控制流完整性，校验间接调用的函数类型哈希</td></tr><tr><td>page cache</td><td>文件页在内存中的缓存；dm-verity 不校验缓存内的修改</td></tr><tr><td>splice</td><td>把一个文件页或管道页挂进另一个对象的系统调用</td></tr><tr><td>XFRM / ESP</td><td>Linux 的 IPsec 框架与封装安全载荷协议</td></tr><tr><td>UAF</td><td>Use-After-Free，释放后使用</td></tr><tr><td>PI futex</td><td>优先级继承 futex，GhostLock 的触发面</td></tr><tr><td>physmap / pipe_buffer</td><td>物理内存线性映射；利用中用来升级任意读写的对象</td></tr><tr><td>SPL</td><td>Security Patch Level，安全补丁级别字符串</td></tr></tbody></table></div>
+
+<h2 id="b">
+              附录 B：关键漏洞速查
+              <a class="anchor" href="#b">链接到此标题</a>
+            </h2>
+
+<div class="table-wrap"><table><thead><tr><th>CVE</th><th>组件</th><th>类型</th><th>影响范围</th><th>修复版本（节选）</th><th>典型用途</th></tr></thead><tbody><tr><td>CVE-2026-43284</td><td>xfrm ESP</td><td>页缓存写入</td><td>内核 ≥ 2017</td><td>5.10.255 / 6.1.171 / 6.6.138 / 6.12.87 / 6.18.28</td><td>DirtyFrag 主链</td></tr><tr><td>CVE-2026-43500</td><td>RxRPC</td><td>页缓存写入</td><td>内核 ≥ 2023</td><td>5.10.255 / 6.1.171 / 6.6.138 等</td><td>DirtyFrag 回退链</td></tr><tr><td>CVE-2026-43499</td><td>rtmutex / futex PI</td><td>栈 UAF</td><td>2.6.39 ~ 7.1</td><td>5.10.261 / 6.1.175 / 6.6.140 / 6.12.86 / 6.18.27</td><td>GhostLock</td></tr><tr><td>CVE-2026-64560</td><td>posix-cpu-timers</td><td>UAF</td><td>非 leader exec 竞态</td><td>上游修复，具体 backport 因厂商而异</td><td>KSuRoot 早期版本</td></tr><tr><td>CVE-2026-98260</td><td>exec / POSIX timer</td><td>UAF</td><td>6.1 ~ 6.18 等维护分支（更老分支同样受影响）</td><td>6.1.191 / 6.6.158 / 6.12.112 / 6.18.54 / 7.2.8</td><td>2026-10 工具潮主力</td></tr><tr><td>CVE-2026-49881</td><td>Android 17 Telecom</td><td>提权到 system_server</td><td>Android 17（SPL &lt; 2026-09-01）</td><td>2026-09 安全补丁</td><td>LSPromise 链，非内核</td></tr><tr><td>CVE-2025-21479</td><td>Adreno GPU</td><td>物理读写</td><td>2025-06 前的 GPU 固件</td><td>高通 2025-06 修复</td><td>老骁龙临时 root</td></tr><tr><td>CVE-2024-31317</td><td>Zygote</td><td>注入提权</td><td>SPL &lt; 2024-06-01</td><td>2024-06 补丁</td><td>到 uid 1000，非 KernelSU root</td></tr></tbody></table></div>
+
+<h2 id="section-34">
+              参考资料
+              <a class="anchor" href="#section-34">链接到此标题</a>
+            </h2>
+
+<ul><li><a href="https://nebusec.ai/research/ionstack-part-3/">NebuSec：IonStack Part III — Rooting Android 17 with GhostLock</a></li><li><a href="https://nebusec.ai/buglist/CVE-2026-43499/">NebuSec：CVE-2026-43499 漏洞索引与时间线</a></li><li><a href="https://blog.ostorlab.co/zh/dirtyfrag-cve-2026-43284-cve-2026-43500-linux-lpe.html">Ostorlab：DirtyFrag 技术分析（中文）</a></li><li><a href="https://github.com/mitschud/DirtyFrag">DirtyFrag 项目（Android 移植）</a></li><li><a href="https://github.com/wanwuzhishi/ksu-root">KSuRoot：Redmi K90 Max 临时 root 工程记录</a></li><li><a href="https://github.com/tiann/KernelSU/releases/tag/v3.2.0">KernelSU v3.2.0 Release（late-load / jailbreak）</a></li><li><a href="https://github.com/hui191/cve-2026-43499-aak-an00/blob/main/docs/05-KernelSU-late-load.md">KernelSU 文档：late-load 的实测与副作用</a></li><li><a href="https://github.com/fynks/awesome-temporary-root">Awesome Temporary Root：临时 root 的机型、工具与模块索引</a></li><li><a href="https://www.androidauthority.com/root-my-galaxy-samsung-temporary-root-exploit-3692681/">Android Authority：Root My Galaxy 与三星免解锁 root</a></li><li><a href="https://m.ithome.com/html/871070.htm">IT之家：三星 One UI 8 移除 Bootloader 解锁</a></li><li><a href="https://www.androidauthority.com/google-june-2026-pixel-drop-update-supported-models-3677642/">Android Authority：Android 17 稳定版推送（2026-06）</a></li><li><a href="https://source.android.com/docs/security/bulletin/2026/2026-09-01">Android Security Bulletin：2026 年 9 月</a></li><li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-43284">NVD：CVE-2026-43284</a> / <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-43499">CVE-2026-43499</a> / <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-64560">CVE-2026-64560</a> / <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-98260">CVE-2026-98260</a></li><li><a href="https://projectzero.google/2023/09/analyzing-modern-in-wild-android-exploit.html">Project Zero：分析现代 Android 在野利用（ashmem fops 技巧）</a></li><li><a href="https://post.smzdm.com/p/al38pmno/">什么值得买：2026 年临时 root 时间线整理</a></li></ul>
+
+            <div class="post-end">
+              <span class="avatar" aria-hidden="true">🌤️</span>
+              <span>写于 2026 年 11 月 23 日，文中涉及的漏洞编号、补丁版本与时间线来自公开资料；不同机型、不同固件的实际表现以实测为准。本文讨论的是公开研究与攻防原理，不构成操作建议。</span>
+            </div>
+          </article>
+        </div>
+
+        <aside class="post-aside">
+          <nav class="toc" aria-label="本页目录">
+            <h4>本页目录</h4>
+            <ol>
+              <li><a href="#1-root">1. 先把「root」拆成身份和会话</a></li><li><a href="#2">2. 启动链的四道门，各管各的</a></li><li><a href="#3-2026">3. 2026：三条线怎么汇到一起</a></li><li><a href="#4">4. 一条链的七个交接点</a></li><li><a href="#5-android">5. 为什么高版本 Android 不是障碍</a></li><li><a href="#6-2026">6. 为什么偏偏是 2026 年</a></li><li><a href="#7">7. 设备与内核矩阵</a></li><li><a href="#8">8. 代价与边界</a></li><li><a href="#9">9. 尾声：锁的语义在变</a></li><li><a href="#a">附录 A：术语表</a></li><li><a href="#b">附录 B：关键漏洞速查</a></li><li><a href="#section-34">参考资料</a></li>
+            </ol>
+          </nav>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <svg class="footer__cloud" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 60V38 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0V60Z" fill="currentColor" />
+      </svg>
+      <div class="shell">
+        <div class="footer__bar">
+          <p class="footer__copy">© 2026 潦草地</p>
+          <p class="footer__note">
+            Markdown 写作 · 静态输出 · 零依赖 ·
+            <a href="/rss.xml">RSS 订阅</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var themeBtn = document.querySelector("[data-theme-toggle]");
+        function syncTheme() {
+          if (!themeBtn) return;
+          var dark = document.documentElement.dataset.theme === "dark";
+          themeBtn.setAttribute("aria-label", dark ? "切换到亮色" : "切换到暗色");
+        }
+        if (themeBtn) {
+          syncTheme();
+          themeBtn.addEventListener("click", function () {
+            var next =
+              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+            document.documentElement.dataset.theme = next;
+            try {
+              localStorage.setItem("lc-theme", next);
+            } catch (e) {}
+            syncTheme();
+          });
+        }
+
+        var header = document.querySelector("[data-header]");
+        function onScroll() {
+          header.classList.toggle("is-solid", window.scrollY > 24);
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        // 演示：行宽
+        var demo = document.querySelector("[data-demo]");
+        if (demo) {
+          var stage = demo.querySelector("[data-stage]");
+          var input = demo.querySelector("[data-in]");
+          var out = demo.querySelector("[data-out]");
+          var apply = function () {
+            var n = Number(input.value);
+            stage.style.maxWidth = n + "em";
+            out.textContent = n;
+          };
+          input.addEventListener("input", apply);
+          apply();
+        }
+
+        // 复制
+        document.querySelectorAll("[data-copy]").forEach(function (btn) {
+          var code = btn.closest(".code").querySelector("code");
+          btn.addEventListener("click", function () {
+            var text = code.innerText;
+            var done = function () {
+              btn.textContent = "已复制";
+              setTimeout(function () {
+                btn.textContent = "复制到剪贴板";
+              }, 1500);
+            };
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(text).then(done, done);
+            } else {
+              done();
+            }
+          });
+        });
+
+        // 目录高亮
+        var links = document.querySelectorAll(".toc a");
+        function spy() {
+          var y = window.scrollY + 160;
+          var current = null;
+          links.forEach(function (a) {
+            var el = document.getElementById(a.getAttribute("href").slice(1));
+            if (el && el.getBoundingClientRect().top + window.scrollY <= y) {
+              current = a;
+            }
+          });
+          links.forEach(function (a) {
+            a.classList.toggle("is-active", a === current);
+          });
+        }
+        window.addEventListener("scroll", spy, { passive: true });
+        spy();
+      })();
+    </script>
+    <script>
+      // 目录高亮：跟随滚动标出当前小节
+      (function () {
+        var links = Array.prototype.slice.call(
+          document.querySelectorAll(".post-aside .toc a")
+        );
+        if (!links.length || !("IntersectionObserver" in window)) return;
+        var byId = {};
+        links.forEach(function (a) {
+          byId[a.getAttribute("href").slice(1)] = a;
+        });
+        var current = null;
+        var obs = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              var a = byId[e.target.id];
+              if (!a || a === current) return;
+              if (current) current.classList.remove("is-active");
+              a.classList.add("is-active");
+              current = a;
+            });
+          },
+          { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
+        );
+        document.querySelectorAll(".prose h2[id]").forEach(function (h) {
+          obs.observe(h);
+        });
+      })();
+    </script>
+  </body>
+</html>
