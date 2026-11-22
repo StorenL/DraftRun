@@ -338,6 +338,16 @@ def render_post(meta, body_html, toc):
     )
 
 
+SHOWMORE = '''<div class="showmore-wrap">
+              <button class="showmore" type="button">
+                Show more
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 9l7 7 7-7" />
+                </svg>
+              </button>
+            </div>'''
+
+
 def render_index(posts):
     tpl = (TEMPLATES / "index.html").read_text(encoding="utf-8")
     items = []
@@ -358,8 +368,44 @@ def render_index(posts):
             </article>'''
         items.append(item)
     newest = f"/posts/{posts[0]['slug']}" if posts else "/"
+
+    # 分类：从所有文章的真实标签聚合，按出现次数排序
+    counts = {}
+    for p in posts:
+        tag = p.get("tag", "")
+        if tag:
+            counts[tag] = counts.get(tag, 0) + 1
+    cats = "\n              ".join(
+        f'<li><a href="/#writing">{html.escape(t)}</a></li>'
+        for t, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
+
+    # 热门：先按 tag 里标 hot=true 的，不够就拿最新几篇
+    hot = [p for p in posts if p.get("hot", "").lower() == "true"]
+    rest = [p for p in posts if p not in hot]
+    picks = (hot + rest)[:5]
+    arrow = (
+        '<span class="arrow-grow" aria-hidden="true">'
+        '<svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" '
+        'stroke-linecap="round" stroke-linejoin="round">'
+        '<line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" />'
+        '<path class="head" d="M7.5 3L15 9l-7.5 6" />'
+        "</svg></span>"
+    )
+    popular = "\n                ".join(
+        f'<li>\n                  <a href="/posts/{p["slug"]}">\n'
+        f"                    {arrow}\n"
+        f'                    <span>{html.escape(p["title"])}</span>\n'
+        f"                  </a>\n                </li>"
+        for p in picks
+    )
+
     return (tpl.replace("{{NEWEST}}", newest)
-            .replace("<!--POSTS-->", "\n            ".join(items)))
+            .replace("<!--POSTS-->", "\n            ".join(items))
+            .replace("<!--CATEGORIES-->", cats)
+            .replace("<!--POPULAR-->", popular)
+            # 文章不足 6 篇时不显示 Show more
+            .replace("<!--SHOWMORE-->", showmore if len(posts) >= 6 else ""))
 
 
 def render_sitemap(posts):
