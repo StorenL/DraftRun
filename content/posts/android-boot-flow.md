@@ -1,0 +1,339 @@
+---
+title: 从电源键到首帧：Android 系统启动流程
+dek: 用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。
+excerpt: 从电源键按下的那一毫秒开始，到桌面画上第一帧结束：Boot ROM、Bootloader、内核、init、Zygote、SystemServer，每一棒交出去之后，你该用什么工具看见它。
+date: 2026-11-23
+minutes: 20
+tag: Android
+hot: true
+note: 文中的耗时数字均为量级示意，来自公开文档与常见工程经验，不代表任何具体机型。
+---
+
+> 基准：Android 10 ~ 14，路径与类名以 Android 12L / 13 的 AOSP 为准。
+
+
+![封面：从电源键到首帧](/images/android-boot-flow/00-cover.webp)
+
+“手机开不了机”这五个字，在售后工单里能对应十几种完全不同的故障：有的连屏幕都不亮，有的卡在第一屏的厂商 Logo 上不动，有的开机动画转完了却永远等不到桌面，还有的进了桌面几秒钟又黑屏重启。用户描述起来都是“开不了机”，但卡住的其实是启动链上完全不同的环节。
+
+这篇文章按时间顺序把这条链走一遍。从电源键被按下的那一毫秒开始，到桌面画上第一帧结束，中间每一棒由谁执行、为什么要这样设计、出了问题该去哪里找证据。文中提到的路径、类名和属性名，以 Android 12 前后的 AOSP 代码结构为主，部分厂商的实现细节会有出入，但骨架是通用的。
+
+## 1. 按下电源键之后，先醒来的不是操作系统
+
+电源键按下去的瞬间，电源管理芯片先给 SoC 上电，时钟和复位电路就绪，CPU 从复位向量指向的固定地址取第一条指令——这段地址里的代码不是 Android，甚至不是 Linux，而是固化在芯片内部 ROM 里的一小段程序，通常叫 Boot ROM。高通平台上它叫 PBL（Primary Boot Loader），联发科平台在 Boot ROM 之后还有一级 preloader，名字不同，干的事情差不多：初始化能让下一段代码跑起来的最小硬件，把存储里的引导程序搬进内存，然后校验、跳转。
+
+### 一根烧死在硅片里的信任根
+
+之所以要把它烧死在芯片里，原因只有一个——它是整条信任链的根。芯片出厂时，厂商把公钥的哈希烧进一次性可编程的熔丝，Boot ROM 用这个哈希去验证下一级引导程序（高通的 XBL、联发科的 preloader）。下一级再验下一级，一级验一级，直到系统分区。这条链上任何一环签名不对，设备要么拒绝启动，要么降级成“设备已损坏”的警告状态。
+
+### 橙色警告在说什么
+
+这解释了很多日常现象。刷机前为什么要先 `fastboot flashing unlock`？解锁本质上是在这一层放行未签名镜像，而不是跳过校验。解锁后的设备开机偶尔会出现橙色警示、`ro.boot.verifiedbootstate` 变成 `orange`，意思是“我知道系统被改过，我仍然启动，但要把这事告诉用户”。它是“我改过系统”的官方标记，不是“验证被关掉了”。
+
+![冷启动的六次交接：从电源键到桌面首帧](/images/android-boot-flow/01-overview.webp)
+
+> 方框是一次完整的交接，右侧虚线是每一棒留下的东西。出问题的时候，按“用户看到什么”往回倒推，通常能定位到某一段。
+
+## 2. Bootloader 做的，比加载内核多得多
+
+Boot ROM 只完成最小初始化，真正能把内核拉起来的是 Bootloader。手机上常见的实现有三类：高通从 SBL/XBL 走到 ABL（Android Bootloader，基于 UEFI/EDK2 的开放实现），联发科和老平台多用 Little Kernel（LK，一个简化到只有几万行的内核子集），部分设备用 U-Boot。对上层开发者来说，它们的脸长得很不一样，但对外接口是统一的：fastboot 协议就实现在这一层。
+
+### Bootloader 不只负责加载
+
+除了“加载器”，Bootloader 还在做很多别的事。它要初始化显示，把厂商的静态 Logo 画到屏幕上——你卡在第一屏看到的那张图，就是它画的，此时内核可能还没开始跑。它要处理低电量充电提示，电池电量太低时不会启动系统，只显示充电图标。它要读懂分区表，决定这次从 A 槽还是 B 槽启动，把 `androidboot.*` 参数拼进内核命令行。它还要验签，这可能是它最重的一份工作。
+
+### boot.img 的版本史
+
+boot.img 也有它自己的进化史。它早期的样子很朴素：一个镜像头，后面跟内核、根文件系统 ramdisk。十几年下来，这个头的版本从 v0 演到 v4，每次演进都在解决“Google 想统一、厂商想定制”这对矛盾。v3 出现在 Android 11，把厂商相关的 ramdisk、dtb 拆到了独立的 `vendor_boot` 分区，`boot` 里只留内核和通用的 first stage init；v4 在 Android 12 加上了 boot signature，让 Bootloader 能验证内核与 ramdisk 的完整性。这些改动和另一个关键词绑在一起：GKI（通用内核镜像）。Google 希望内核能像普通软件一样独立升级，那就得让内核只包含通用代码，把厂商的驱动模块放进 vendor 分区。
+
+### A/B 槽位与动态分区
+
+槽位切换是另一个常被忽略的机制。A/B 双分区意味着系统镜像有两份，OTA 升级时新系统写进非活动槽，重启时 Bootloader 读 `misc` 分区里的启动控制块（BCB），决定这次启动哪个槽。新系统第一次启动成功之后，框架层才会回写“这个槽可用”的标记；如果启动失败或者根本起不来，下次就回退到旧槽。这也是为什么 OTA 之后第一次重启会比平时慢——它在做失败回滚的保险，也在跑 `update_verifier` 校验非活动槽的数据完整性。
+
+还有一个常被忽略的机制是动态分区：`super` 分区里装着若干逻辑分区（system、vendor、product……），具体的分区表由 `liblp` 在运行时读取。正因如此，Android 10 之后才有 `fastbootd`——一个跑在 recovery 里的用户态 fastboot，用来处理这些 Bootloader 自己看不懂的逻辑分区。
+
+### AVB 验的是什么
+
+最后是 AVB。`vbmeta` 分区里存着一组描述符：每个受保护分区（boot、system、vendor……）的哈希，或者一棵 dm-verity 哈希树的树根。Bootloader 用内置公钥验证 `vbmeta` 的签名，再逐项校验这些分区。`system` 这类只读分区不是“启动时全量校验”——那样太慢——而是挂载时由 dm-verity 做块级校验，读到被篡改的块才报错。很多人改完系统分区后遇到 dm-verity 报错进不去系统，就是这个机制在起作用；想正常折腾，得先用 `adb disable-verity` 把校验关掉（这会削弱防护，也会影响后续 OTA）。
+
+![Bootloader 阶段的三块拼图：boot.img 结构、A/B 槽位与 AVB 验证链](/images/android-boot-flow/02-bootloader.webp)
+
+## 3. 内核的那几秒钟
+
+Bootloader 把控制权交给内核，接下来是 Linux 的主场。内核解压自己，初始化内存管理、调度器、中断，启动各个子系统，把设备树里的硬件描述翻译成驱动，挂载根文件系统，最后启动用户态的第一个进程。屏幕上这段时间通常停在静态 Logo，看起来“什么都没发生”，实际上内核在下面忙得不可开交：驱动探测、存储控制器就绪、文件系统挂载、SELinux 策略文件所在的分区挂载。
+
+### 内核命令行与参数
+
+内核启动之后，init 之前，有一件小事决定了后面所有日志和属性的来源：内核命令行。Bootloader 传下来的 `androidboot.xxx=yyy` 参数，会被后面的 init 读成 `ro.boot.xxx` 属性。`androidboot.slot_suffix` 告诉系统当前从哪个槽启动，`androidboot.verifiedbootstate` 是 AVB 的验证结果，`androidboot.serialno` 是序列号。Android 12 之后又多了 bootconfig 机制：参数不再塞进 4 KB 的命令行限制里，而是放进 `/proc/bootconfig`，GKI 时代的内核更依赖这个通道。
+
+### 日志在哪儿
+
+这一段的排障素材很直接。`dmesg` 里每条日志前面都有自开机以来的秒数，从 `[0.000000]` 到 `[1.200000]` 就是内核用掉的时间。如果设备重启后进不去系统，`/sys/fs/pstore/console-ramoops` 里常常保留着上一次崩掉前最后几行内核输出，那是从 Bootloader 到半路死掉之间唯一的现场。老资料里常提到的 `last_kmsg` 在新内核上已经换成了 pstore，看日志的位置变了，思路没变。
+
+### 时间花在驱动上
+
+内核耗时里的大头通常不在内核代码本身，而在驱动探测。一个设备树里挂几十上百个节点，每个驱动 probe 一遍，遇到依赖顺序不对的还要 deferred probe 重试。厂商和 Google 都在这个环节抠时间：把非必要的驱动挪到模块里延迟加载，把传感器、触控之类能晚启动的设备往后排，甚至把某些初始化改成异步。这块的边界很清楚——内核能早一秒跑完，init 就能早一秒开工。
+
+## 4. init 执行了三次
+
+系统里到底谁在“主持”启动？是 init。它来自 ramdisk，运行在 `/init`，PID 是 1，是所有用户态进程的祖先。
+
+### 三次 exec，一个依赖环的解法
+
+但很多人不知道的是，一次正常启动里 init 会执行自己三次。第一次是 FirstStageMain，从 ramdisk 里的 `/init` 启动，挂载 `/dev`、`/proc`、`/sys` 这些最基础的虚拟文件系统，按设备树里的 fstab 做 early mount，把启动必需的分区先挂上，同时把 ueventd 拉起来，让它盯着内核的设备事件、把 `/dev` 下的节点补出来。第二次是 `init selinux_setup`：编译并加载 SELinux 策略，把系统切到 enforcing 模式。第三次是 `init second_stage`：初始化属性服务，解析 `init.rc` 等 rc 文件，启动服务，进入主循环。
+
+为什么要折腾三次？因为存在一个自举的依赖环：SELinux 策略文件在 system 分区上，要读它得先挂载 system；但在策略生效之前，又不应该做太多特权操作；而属性服务、服务管理这些又依赖策略已经就位。解法是把启动切成互相依赖最小的三步，每一步只做下一阶段的必要条件，最后用 exec 把自己替换掉——进程号还是那个 1，代码却换了一轮。
+
+### init.rc 的语法与执行模型
+
+理解了这三段，`init.rc` 就好读了。它是 Android Init Language，语法只有两种基本结构：`on <trigger>` 定义一组动作，`service <name> <path> [args]` 定义一个服务。rc 文件分散在 system、vendor、product、odm 各分区的 etc/init 目录里，按分区归属，不允许越界引用——这是 Android 10 之后强化的规则，用来防止厂商的 rc 混进系统行为。
+
+一份简化过的 rc 长这样：
+
+```ini
+# Action：late-init 触发时依次执行
+on late-init
+    trigger early-fs
+    trigger fs
+    trigger post-fs
+    trigger post-fs-data
+    trigger zygote-start
+
+# Service：声明 zygote 进程
+service zygote /system/bin/app_process64 -Xzygote /system/bin \
+        --zygote --start-system-server --socket-name=zygote
+    class main
+    socket zygote stream 660 root system
+```
+
+init 的执行模型有个容易误解的地方：动作里的命令是一条一条串行执行的，但 `start` 只是把服务排进启动队列，服务本身是并行起来的。所以 `class_start main` 一声令下，main 类里的服务会同时争抢启动，谁先起来谁先干活，init 并不等待它们跑完。需要同步的地方才用 `wait_for_prop`、`wait_for_file` 这类命令去卡住顺序。
+
+### 属性服务与 SELinux
+
+服务之外的另一个基础设施是属性服务。init 在 `/dev` 下建一块共享内存区域 `/dev/__properties__`，再留一个 socket，读写都走这个通道。属性分为 `ro.` 只读、`persist.` 持久化、`vendor.`、`sys.` 等命名空间，SELinux 管着谁能写哪个前缀。真正好用的是属性触发器：`on property:sys.boot_completed=1` 这样的写法，让一大堆服务可以“等系统起来之后再干活”。这也是为什么开机完成后很多后台任务会同时醒来——它们都在等同一个属性。
+
+SELinux 是这一段的隐形主角。策略文件编译在 `plat_sepolicy.cil` 和 `vendor_sepolicy.cil` 里，从 Android 8 起还被拆成 vendor 与 system 两份，各自定义从不重叠的域。策略一旦 enforce，rc 里的每个服务都得声明自己的 seclabel，权限不够就会被拒绝——日志里那句 `avc: denied`，就是某次越权被拦下的现场。设备上 `adb shell getenforce` 返回 `Enforcing` 是常态；服务起不来、进程一闪而过，多半先看 `dmesg | grep avc`。
+
+![init 的两段执行：first stage 与 second stage](/images/android-boot-flow/03-init.webp)
+
+## 5. Zygote 预加载的那两秒
+
+Java 世界的起点不是 `main`，是一个叫 Zygote 的进程。这个名字取得很贴切：受精卵，所有 Java 进程都从它分裂出来。
+
+### 预加载了什么
+
+init 启动的 zygote 服务，本质是 `/system/bin/app_process`——一个跑着 ART 虚拟机的普通进程，参数里带着 `--zygote --start-system-server`。它之所以特殊，是因为它在正式干活之前，要先做一件非常昂贵的事：预加载。加载几千个常用类，把主题资源、常用库映射进内存，完成 JIT 预热。这一步在一台中端机上要花掉一到两秒，旗舰机也差不多；而这笔时间只花一次，后面所有 Java 进程都能继承成果。
+
+### fork、写时复制与一次特化
+
+它靠的是 fork 和写时复制。fork 出来的子进程页表指向父进程的同一块物理内存，内核只在某一页被写入时才复制一份新页。于是 app 进程刚创建时，“已经加载好的类、已经解析过的资源”是真实存在的，并且几乎零拷贝。代价也在这里：预加载的对象必须是只读的，任何可变状态在子进程里都会变成新副本。所以静态状态不能共享，类加载器、资源表这些只读结构可以。
+
+预加载完成后，Zygote 进入 `runSelectLoop`，守着一个 socket 等命令。系统要创建新进程时（AMS 申请 App 进程走的就是这条路），参数通过 socket 送过来：uid、gid、进程名、运行时参数、优先级的调整方式、SELinux 域。Zygote fork 一份自己，在子进程里完成特化——切 uid、切 gid、换 SELinux 域、改进程名、设置 rlimit——然后子进程继续执行到 `RuntimeInit.applicationInit`，最终调到你熟悉的 `ActivityThread.main`。App 的代码从这一刻才开始跑，之前的准备工作全是继承来的。system_server 是个例外：它不等外部命令，Zygote 在自己的启动流程里就主动 fork 了它，让它去跑 `SystemServer.main`。
+
+### 别把 zygote 当普通守护进程
+
+这里有个常见的调试误区：把 zygote 当成普通守护进程。它确实是 init 拉起的一个服务，但它同时是几乎所有 Java 进程的父进程，也是新进程唯一的创建入口。杀掉它，内核不会顺手把已经存在的子进程一起收掉，可进程创建这条链路就断了，AMS 手里那条 socket 也得重来——设备上看到的是一段诡异的失联，直到新的 zygote 被 init 拉起、双方重新连上。别在真机上拿这个做实验。
+
+### 预加载清单是一个取舍
+
+preload 清单是可以调的，但调它是一门取舍艺术。类少了，zygote 启动更快、内存占用更低，代价是每次冷启动 App 时临时加载类，首帧变慢；类多了，开机多等半秒，内存也多吃几十 MB。近几年的方向是用 PGO（按 profile 引导优化）代替人工裁剪：用真实用户的使用轨迹生成 profile，让编译器决定哪些类值得提前编译、提前加载。这类细节在厂商的开机优化里比重越来越大。
+
+![Zygote 的 fork 扇出与写时复制](/images/android-boot-flow/04-zygote.webp)
+
+## 6. SystemServer 里住着几百个服务
+
+Zygote fork 出来的第一个重量级子进程是 system_server，uid 1000，进程名 `system_server`。它承接了 Android 框架层几乎所有系统服务：ActivityManagerService 管进程与 Activity，PackageManagerService 管安装与扫描，WindowManagerService 管窗口，还有网络、电源、显示、传感器、通知、输入法……名字能列满一页。
+
+### 三批服务与依赖顺序
+
+这些服务不是随便起的，SystemServer 按依赖分成三批。第一批是地基：ActivityTaskManagerService、ActivityManagerService、PackageManagerService、PowerManagerService、DisplayManagerService 这类必须最先起来的服务，其中 PMS 还要等分区挂载完成才能扫描安装包。第二批是核心服务，像电量统计、WebView 更新。第三批才是长尾，WMS、输入法、相机、音频这些都在这里。
+
+### servicemanager：binder 世界的电话总机
+
+这些服务之间怎么找到彼此？靠 servicemanager。这个由 init 在更早阶段拉起的进程是 binder 世界的电话总机：服务启动时把自己的 binder 句柄注册到这里，别的进程按名字查询，才能拿到句柄。system_server 启动时最要紧的动作之一，就是把 ActivityManagerService 这类服务的句柄挂上去，后面所有系统服务和应用才访问得到它们。servicemanager 要是没起来，后面的服务即使都跑起来了，也互相找不到，整个系统等于瘫痪——这也是它被 init 放在 core 类里优先启动的原因。
+
+### 并行能省下的与省不下的
+
+服务多了，启动顺序就成了一种约束。AMS 必须足够早，因为别的服务启动时要往它里面注册；PMS 必须等分区就绪，因为要扫安装包；WMS 又依赖显示子系统初始化完成。这些依赖编在代码里，没法靠并行绕过去。Google 在 Android 10 之后加了一个 `SystemServerInitThreadPool`，把不互相依赖的服务初始化扔进线程池并行做，但这只是把能并的部分并起来，结构性的顺序没法省。
+
+PackageManagerService 的扫描是这块最容易被低估的耗时项。设备上几百个预装应用，每个都要读 AndroidManifest、解析组件、检查 dexopt 状态，几百毫秒很正常。厂商优化经常从这里下手：预置应用裁剪、扫描并行化、把部分检查延迟到空闲时做。
+
+### 里程碑与 Watchdog
+
+服务起齐之后，SystemServer 会一路调用 `startBootPhase`，把系统推进到一个个里程碑：默认显示就绪、锁屏设置就绪、系统服务就绪、AMS 就绪、第三方应用可以启动、开机完成。每过一个里程碑，相关的服务会收到回调，做一些只有到那个阶段才能做的事。最后 AMS 的 `systemReady` 调用 `startHomeActivityLocked`，请求 Launcher 启动——桌面进程也是 Zygote fork 出来的，走的是和普通 App 一样的路径。
+
+这期间还有一位不显眼的看门人：Watchdog。它是一个独立线程，注册了若干个“监控对象”，定期检查这些对象是否还有心跳。某个系统服务主线程卡在锁上超过 60 秒，Watchdog 就会打印所有相关线程的堆栈，然后亲手杀死 system_server。日志里那句 `*** WATCHDOG KILLING SYSTEM PROCESS` 一出现，基本可以断定某个服务死锁了。设备随之软重启：zygote 发现自己的孩子没了，自己也退出，init 把 zygote 重新拉起来，一切重来。logd 不在这个循环里，所以重启之后 `logcat` 里还能翻到上一次 system_server 的遗言——如果能看到 zygote 打印的 `Exit zygote because system server (pid ...) has terminated`，那就是这次软重启的直接证词。
+
+![SystemServer 的三批服务与 Watchdog](/images/android-boot-flow/05-systemserver.webp)
+
+## 7. 开机动画为什么还不退
+
+开机动画由独立的 bootanimation 进程绘制，动画素材来自 system 或 product 分区的 bootanimation.zip 之类。它从很早就开始转，转多久没人规定，直到系统服务收尾、准备让第一帧真实画面显示时，才收到退出信号——通常是一个叫 `service.bootanim.exit` 的属性，系统侧把它置位之后，bootanimation 进程退出，窗口管理器撤掉遮罩，桌面才露出来。
+
+### 卡在动画，卡在哪
+
+用户看到的“卡在开机动画”，其实是“SystemServer 一直没走到那一步”。动画本身不背锅，它只是在忠实地等。排查时不要盯着动画，要看 `logcat -b system`：某个服务反复崩溃重启、PMS 扫描卡死、某个 binder 调用超时，都会让流程僵在动画里。
+
+### BOOT_COMPLETED 与 Direct Boot
+
+动画退出之后，AMS 在收尾流程里发出 `ACTION_BOOT_COMPLETED` 广播，并把 `sys.boot_completed` 置为 1。对应用开发者来说，这是“开机自启”的官方入口；对系统来说，这只是框架层的一个里程碑。如果设备启用了直接启动（Direct Boot），在这之前还会有一个 `ACTION_LOCKED_BOOT_COMPLETED` 广播，发给声明了 directBootAware 的应用，让它们在用户解锁屏幕之前就能干活——闹钟、来电、紧急呼叫这类功能靠的就是它。
+
+### 启动完成之后
+
+要提醒的是，`sys.boot_completed=1` 不等于“一切就绪”。系统起来之后还有一批后台工作在排队：dexopt 整理、JobScheduler 的初始化任务、媒体库扫描、各种统计上报。用户感觉“开机后头三十秒很卡”，多数时候不是启动没完成，而是这些后台任务在抢 CPU 和 IO。厂商优化里经常把这类任务挪到开机后延时执行，理由就在这里。
+
+## 8. 把整条链拉平看
+
+前面一路讲下来，容易只记住“谁接谁”，忘了看它们之间的调用关系。下面这张时序图把它们拉平：纵向是角色，横向是时间，箭头是调用，循环箭头是自己干活。
+
+![一次冷启动的完整时序：七个角色与它们的交接](/images/android-boot-flow/06-sequence.webp)
+
+> 自环表示“自己在做事”，横向箭头是跨进程交接。init 之后的部分不是一条直线，真正把它们串起来的是依赖，不是时间。
+
+### 串行与并行的分界
+
+图里最该盯住的是几条线：Boot ROM 加载 Bootloader、Bootloader 加载内核、内核执行 `/init`，这三棒严格串行，谁也不能插队。init 之后的图景就变了——init 在启动服务，但 zygote 的预加载和 SystemServer 的初始化是同时进行的，内核剩余的驱动初始化、文件系统检查也还在后台跑。真正把这个阶段串起来的不是时间，而是依赖：SystemServer 要等 zygote fork 出自己，AMS 要等 SystemServer 把服务都注册好，Launcher 要等 AMS 发话。
+
+### 唯一的出生地
+
+另一条容易漏掉的线是 fork。时序图里“启动 zygote 服务”是 init 的动作，“fork 出 App”是 zygote 的动作，“拉起 Launcher”表面看是 SystemServer 的调用，实际执行者还是 zygote——system_server 只是通过 socket 请求它 fork 一个新进程，再让那个进程去跑 Launcher。所有 Java 进程的出生地都是同一个 socket。
+
+## 9. 想让开机快一点，先从测量开始
+
+开机优化最容易犯的错误，是不做测量直接下手。“感觉是 XXX 慢”十有八九是错的；Android 从 init 到框架层留下了一整套埋点，就等着人去用。
+
+### 先分清测的是什么
+
+测之前先分清测的是什么。从关机状态按电源键，走完整条链，那叫冷启动；系统进程已经退出、数据还在，重新把框架拉起来，那是温启动，常见于软重启和崩溃恢复；进程都还活着，只是 Activity 重建，那叫热启动。三种情况的时间构成完全不同，冷启动才该拿去和“开机时间”挂钩。很多团队测出来的数据忽高忽低，就是因为把台架上的 `adb reboot`、故障重启、用户手动锁屏解锁混在一起算了。
+
+### 三把尺子：事件、bootchart、perfetto
+
+最粗的粒度是 `logcat -b events` 里的 `boot_progress_*` 事件，系统会依次打出：
+
+```text
+boot_progress_start
+boot_progress_preload_start
+boot_progress_preload_end
+boot_progress_system_run
+boot_progress_pms_start
+boot_progress_pms_system_scan_start
+boot_progress_pms_data_scan_start
+boot_progress_pms_scan_end
+boot_progress_pms_ready
+boot_progress_ams_ready
+boot_progress_enable_screen
+```
+
+相邻两个事件的时间差，就是对应阶段的耗时，一眼就能看出 Zygote 和 SystemServer 各占了多少。
+
+```bash
+adb shell getprop sys.boot_completed
+adb shell logcat -b events -v monotonic | grep -E "boot_progress"
+```
+
+更细的粒度靠两种工具。bootchart 会采集整个启动过程的 CPU 和 IO 分布，数据落在 `/data/bootchart`，需要在 userdebug 或 eng 版本的设备上开启（先 `touch /data/bootchart/enabled` 再重启，用 AOSP 自带的 `grab-bootchart.sh` 拉取和渲染）；perfetto 则能把启动期切成无数个切片，调度延迟、binder 事务、锁等待、页错误、块设备 IO 全都能摊开看。两者的共同点是：**必须在开机之前就开始采集**，之后补是补不回来的，这也是很多团队测不准开机耗时的原因——测试脚本在设备已经启动后才连上去，采集窗口早就错过了。
+
+开机时间还有个不太被讨论的变量：温度与电量。低温下存储性能下降、电池电量低时 SoC 降频，同一台设备冷启动能从 8 秒抖到 12 秒。所以测量要固定条件：同一台设备、同一温度区间、满电、同样的 OTA 状态，至少重复五次取中位数。
+
+![冷启动的 8.8 秒预算：各阶段占比](/images/android-boot-flow/08-boottime.webp)
+
+> 比例来自一台高端机的采样，换台设备绝对值会变，但量级关系基本成立。
+
+### 方向与代价
+
+有了这张分布图，优化的方向就清楚了：前四段（Boot ROM、Bootloader、Kernel、init）加起来大概两三秒，能改进的空间有限但不为零；后两段 Zygote 和 SystemServer 占了将近三分之二的时间，所有厂商的开机优化最终都要在这里动手。
+
+具体能做的事，按性价比大致排一下：裁剪用不到的系统服务和 rc 服务（直接减少串行启动项）；把非关键服务的初始化从 `systemReady` 挪到空闲时（用 JobScheduler 或 Handler 延时）；在 SystemServer 里把独立服务的 init 并行化；用 PGO 重新编排 zygote 预加载清单；内核侧减少 deferred probe、延迟加载无关驱动；文件系统侧提前预读、并行校验。每一项都有代价，砍服务可能砍掉某个功能，延迟初始化会让“开机后三十秒”变慢，裁剪预加载类会让 App 首启变慢——优化从来不是免费午餐，只是把成本挪到用户更愿意接受的地方。
+
+### 一个隐蔽的坑：假完成
+
+另一个隐蔽的坑叫假完成。有些优化会把某个耗时操作从启动路径上摘掉，挂到一个“看起来完成了”的异步任务里，结果 `sys.boot_completed` 提前了一秒，但用户打开某个应用时卡了五秒。对开机时间的考核如果只看这一个指标，这种优化很容易被当成成绩，实际上只是把问题挪到了别处。
+
+## 10. 开机起不来的时候该看哪里
+
+开机流程排障最怕两件事：一是不分阶段乱动，二是把数据清了再问“为什么”。正确的顺序永远是：先判断卡在哪一段，再找那一段的证据。
+
+### 现象与阶段的对应
+
+现象和阶段的对应关系其实很稳定。屏幕完全没反应，问题基本在电源和 Boot ROM 这一段，量电流、换线、看能不能进 fastboot，比任何软件手段都直接。卡在静态 Logo 不动，说明内核或 init 半路趴下了，串口日志、`dmesg`、pstore 里的 `console-ramoops` 是第一手材料。开机动画一直转，说明 SystemServer 没跑完，`logcat -b system` 里能看到是哪个服务在反复重启。进了桌面又重启，多半是崩溃循环或分区校验失败。屏幕上出现 AVB 红字黄字，那是校验失败，重刷 vbmeta 与官方镜像之前，先确认自己是不是刚改过分区。
+
+![开机故障分诊：现象、卡点与第一手证据](/images/android-boot-flow/07-triage.webp)
+
+### 证据清单
+
+几个好用的入口，按可获得性排一下：
+
+```bash
+# 判断启动是否完成
+adb shell getprop sys.boot_completed
+
+# 内核日志（userdebug 或 root 可用）
+adb shell dmesg | tail -50
+
+# 上一次崩溃留下的内核现场（多为 root 可读）
+adb shell cat /sys/fs/pstore/console-ramoops-0
+
+# 系统服务日志
+adb shell logcat -b system -d
+
+# 系统侧的崩溃记录
+adb shell dumpsys dropbox --print
+```
+
+### 软重启与 bootloop
+
+先说一件与排障直接相关的事：软重启之后，`system_server` 的日志还在。因为 logd 是独立进程，不在重启范围里，所以上一次 `system_server` 死掉前的日志会留在缓冲区中，只要没人把它冲掉。遇到“开机动画卡了几十秒然后黑屏重启”的现象，第一时间抓 `logcat -b all` 往往能直接看到 Watchdog 的堆栈。
+
+bootloop（无限重启）是另一类问题，成因比“卡住”更杂：可能是某个系统应用在启动时崩溃，可能是 zygote 反复 fork 失败，可能是 SELinux 策略漏了某个域导致关键服务起不来，也可能是 vold 卡在挂载加密分区上。判断手段包括：能不能进安全模式（Android 的安全模式会禁用第三方应用，如果能进，锅大概率在某个应用）、dropbox 里有没有连续崩溃记录、`update_verifier` 有没有报分区校验失败。Android 8 之后还有一个保底机制叫 Rescue Party，检测到系统反复崩溃会自动进入救援流程，把用户引导到恢复模式。这些机制的存在说明一件事：Android 的设计者默认“启动会失败”，并且把失败回滚当成正常路径的一部分在建设。
+
+## 11. 几个流传很广的说法
+
+有几种说法流传得很广，容易把人带偏，这里逐个说清楚。
+
+### 六个说法，逐个拆
+
+“boot.img 就是操作系统。”不是。boot.img 里装的是内核和早期 ramdisk，Android 的大部分代码在 system 分区里，是 init 之后由 mount 挂进来的。刷了 boot.img 不会改变你的 App，改了 system 分区也不会影响内核——这正好解释了为什么刷内核和刷系统是两件独立的事。
+
+“杀掉 zygote 没事，它会自己重启。”前半句错，后半句对。zygote 会重启，但重启方式是整机软重启：system_server 先死，所有 App 一起没了。这不是“重启一个守护进程”，而是把 Android 的框架层整个翻新一遍。
+
+“跳过开机动画能加快开机速度。”开机动画是遮罩，它退出的时机由系统决定，不是它自己决定什么时候结束。跳过动画只是让用户更早看到黑屏，`sys.boot_completed` 到来的时间一分不差。某些定制 ROM 把动画时长压缩，优化的是观感不是速度。
+
+“解锁 Bootloader 就等于关掉验证。”解锁之后验证仍然在跑，只是不再阻止启动，验证结果体现在 `ro.boot.verifiedbootstate` 上（解锁通常显示 orange）。dm-verity 也还在，除非你另外关掉它。
+
+“预加载的类越多，开机越慢，所以应该尽量少。”预加载多确实拖慢 zygote，但少了之后每个 App 启动都要补课。这里没有普适的最优解，只有针对具体机型的测量和取舍。
+
+“`sys.boot_completed=1` 就代表系统完全正常。”它是一个里程碑，不是体检报告。系统服务里还有一堆东西在初始化，后台任务正在排队，用户第一次操作时可能撞上任何一处没准备好的地方。
+
+## 12. 写在最后
+
+把这条链走一遍，会发现它没有一个“总指挥”，每一步都只依赖前一步留下的东西：Boot ROM 信任 Bootloader，Bootloader 信任内核，内核执行 init，init 拉起 zygote，zygote 分裂出 system_server，system_server 建好系统服务，最后把桌面推上屏幕。中间任何一环断了，后面的角色连出场的资格都没有。
+
+支撑这套流程的，无非几种朴素的设计。信任链把“不可修改”压缩到最小的一小块 ROM 上，其他部分都可以验，也都可以换。自举用三次 exec 解决依赖环——init 不能假设 system 已经挂好，也不能假设策略已经生效，只能一小步一小步地把自己换成下一阶段。共享代替复制，让所有 Java 进程在出生时就带着一份预加载好的世界，省掉重复劳动。而为了把启动时间压下去，系统又在确定性和懒加载之间反复权衡：能并行的并行，能延迟的延迟，能预设的预设，最终让“开机”这件事从十几秒压缩到几秒。
+
+下次你看到一台手机三秒进桌面，或者一台设备卡在动画上不肯走，大概能猜到那几秒里，或者那几十秒里，是谁在让路，是谁在等谁。
+
+## 附：版本速查
+
+| 能力 / 行为 | 起始版本 | 说明 |
+|---|---|---|
+| boot image header v3（`vendor_boot` 拆分） | Android 11 | 厂商 ramdisk 与 dtb 移入 `vendor_boot`，`boot` 只留内核与通用 first stage init |
+| boot image header v4（boot signature） | Android 12 | Bootloader 可校验内核与 ramdisk 的完整性，配合 GKI 路线 |
+| bootconfig（`/proc/bootconfig`） | Android 12 | `androidboot.*` 参数不再受 4 KB 命令行限制 |
+| `fastbootd`（用户态 fastboot） | Android 10 | 用于刷写 `super` 里的逻辑分区，Bootloader 看不懂它们 |
+| rc 文件分区归属限制 | Android 10 | 禁止跨分区 import，防止厂商 rc 混进系统行为 |
+| SELinux 策略按 vendor / system 拆分 | Android 8 | `vendor_sepolicy.cil` 与 `plat_sepolicy.cil` 各自定义不重叠的域 |
+| Rescue Party 救援机制 | Android 8 | 检测到系统反复崩溃时自动进入救援流程 |
+
+## 参考资料
+
+- [Android 官方文档：Bootloader](https://source.android.com/docs/core/architecture/bootloader)
+- [Android 官方文档：Boot image header（v0–v4）](https://source.android.com/docs/core/architecture/bootloader/boot-image-header)
+- [Android 官方文档：Ramdisk partitions 与 init 的三个阶段](https://source.android.com/docs/core/architecture/partitions/ramdisk-partitions)
+- [Android 官方文档：A/B 分区与无缝升级](https://source.android.com/docs/core/ota/ab)
+- [Android 官方文档：Verified Boot（AVB）](https://source.android.com/docs/security/features/verifiedboot)
+- [Android 官方文档：启动时间优化（bootchart）](https://source.android.com/docs/core/perf/boot-times)
+- [AOSP：init README](https://android.googlesource.com/platform/system/core/+/master/init/README.md)
+- [AOSP：`system/core/init/`](https://android.googlesource.com/platform/system/core/+/refs/heads/main/init/)
+- [AOSP：`ZygoteInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/com/android/internal/os/ZygoteInit.java)
+- [AOSP：`SystemServer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/services/java/com/android/server/SystemServer.java)
+- [AOSP：`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/services/core/java/com/android/server/am/ActivityManagerService.java)

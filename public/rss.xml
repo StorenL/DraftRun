@@ -5,8 +5,16 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sun, 22 Nov 2026 17:06:43 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 22 Nov 2026 17:12:44 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>从电源键到首帧：Android 系统启动流程</title>
+      <link>https://draft.run/posts/android-boot-flow</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-boot-flow</guid>
+      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>]]></description>
+    </item>
     <item>
       <title>从图标到第一帧：Android 应用启动流程</title>
       <link>https://draft.run/posts/android-app-launch-flow</link>

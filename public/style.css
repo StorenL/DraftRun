@@ -1060,6 +1060,13 @@ a {
 }
 
 
+/* flex/grid 子项默认 min-width:auto，宽表格会把整栏顶开 */
+.post-main,
+.prose,
+.prose > .table-wrap {
+  min-width: 0;
+}
+
 .prose > * + * {
   margin-top: 1.4em;
 }
@@ -1697,12 +1704,16 @@ a {
 
 /* 窄屏：目录收到正文上方，恢复成胶囊 */
 @media (max-width: 900px) {
+  /* 窄屏：目录挪到正文上方（用 order，不改 DOM 顺序） */
   .post-layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* 桌面版留了 align-items:start，这里必须复位 */
   }
   .post-aside {
     position: static;
-    margin-bottom: 8px;
+    order: -1;
+    margin-bottom: 18px;
   }
   .post-aside .toc ol {
     display: flex;
