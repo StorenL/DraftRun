@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>一次开机内的 root：Android 临时 Root 的技术链路 · 潦草地</title>
-    <meta name="description" content="一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。" />
+    <meta name="description" content="不依赖 Bootloader 解锁的内核态提权" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
       (function () {
@@ -23,7 +23,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="潦草地" />
     <meta property="og:title" content="一次开机内的 root：Android 临时 Root 的技术链路" />
-    <meta property="og:description" content="一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。" />
+    <meta property="og:description" content="不依赖 Bootloader 解锁的内核态提权" />
     <meta property="og:url" content="https://draft.run/posts/android-temp-root" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
@@ -84,7 +84,7 @@
       <div class="wrap post-head">
         <p class="post-kicker">Android</p>
         <h1 class="post-title">一次开机内的 root：Android 临时 Root 的技术链路</h1>
-        <p class="post-dek">一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>
+        <p class="post-dek">不依赖 Bootloader 解锁的内核态提权</p>
         <p class="post-meta">
           <span>首发于 <a href="/">2026 年 11 月 23 日</a></span>
           <span class="sep">·</span>
@@ -631,9 +631,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

@@ -113,14 +113,13 @@
 
             <div class="promo">
               <p>
-                ✏️ <strong>这里是草稿本。</strong>
-                我在这里记下 Android、工具、排版，和那些看起来很小、用起来很大的东西。
+                <strong>这里是潦草地。</strong>它是我的学习「草稿本」——记下我对技术的理解，也记下还没想明白的地方。
               </p>
               <p>
-                文章都是先潦草地写在纸上，再誊到这里。没有日更，没有追热点——想清楚了才写，写完改三遍再发。
+                大多会是 Android，偶尔也写点别的。希望它能见证自己的成长。 🌱
               </p>
               <a class="promo__btn" href="/posts/android-binder-ipc">
-                翻开第一篇
+                最近一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
@@ -188,8 +187,8 @@
 
             <article class="post-item">
               <h3><a href="/posts/android-binder-ipc">一次跨进程调用有多远：Android Binder 进程通信机制</a></h3>
-              <p class="post-item__sub">一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。</p>
-              <p class="post-item__excerpt">主线程停在 getPackageInfo 上 2.3 秒，可这一行什么都没做。按真实顺序把一次跨进程调用拆开，看时间停在哪一段、线程池怎么排队、以及为什么会收到 TransactionTooLarge。</p>
+              <p class="post-item__sub">从 Java 调用到内核事务队列的完整链路</p>
+              <p class="post-item__excerpt">主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。</p>
               <a class="readmore" href="/posts/android-binder-ipc">
                 Read more
                 <span class="trail" aria-hidden="true">
@@ -202,8 +201,8 @@
             </article>
             <article class="post-item">
               <h3><a href="/posts/android-boot-flow">从电源键到首帧：Android 系统启动流程</a></h3>
-              <p class="post-item__sub">用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>
-              <p class="post-item__excerpt">从电源键按下的那一毫秒开始，到桌面画上第一帧结束：Boot ROM、Bootloader、内核、init、Zygote、SystemServer，每一棒交出去之后，你该用什么工具看见它。</p>
+              <p class="post-item__sub">从 Boot ROM 到桌面首帧的六次交接</p>
+              <p class="post-item__excerpt">电源键按下到桌面画出第一帧，中间经过 Boot ROM、Bootloader、内核、init、Zygote 和 SystemServer 六次交接。每段都写了它能产出什么日志、卡住时该看哪里。</p>
               <a class="readmore" href="/posts/android-boot-flow">
                 Read more
                 <span class="trail" aria-hidden="true">
@@ -216,8 +215,8 @@
             </article>
             <article class="post-item">
               <h3><a href="/posts/android-temp-root">一次开机内的 root：Android 临时 Root 的技术链路</a></h3>
-              <p class="post-item__sub">一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>
-              <p class="post-item__excerpt">Bootloader 锁着，su 却能用。这条链路根本不动启动链——它在已经跑起来的系统里把内核改掉。从权限原语、任意读写，到把 KernelSU 装进活动内核，逐段拆开。</p>
+              <p class="post-item__sub">不依赖 Bootloader 解锁的内核态提权</p>
+              <p class="post-item__excerpt">设备没解 BL，su 也能用。这类临时 root 不动启动链，而是在已经跑起来的系统里改内核，再把 KernelSU 装进去。文中按权限原语、任意读写、内核加载三段拆开。</p>
               <a class="readmore" href="/posts/android-temp-root">
                 Read more
                 <span class="trail" aria-hidden="true">
@@ -230,8 +229,8 @@
             </article>
             <article class="post-item">
               <h3><a href="/posts/android-app-launch-flow">从图标到第一帧：Android 应用启动流程</a></h3>
-              <p class="post-item__sub">应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。</p>
-              <p class="post-item__excerpt">一次冷启动要横跨 Launcher、system_server、Zygote、应用进程四个进程。按真实顺序走一遍，把每个交接点落到具体的类、日志和 trace 上，你才知道时间里哪一段是可以动的。</p>
+              <p class="post-item__sub">冷启动的十四个阶段与对应的 trace</p>
+              <p class="post-item__excerpt">一次冷启动横跨 Launcher、system_server、Zygote 和应用进程，中间交接十几次。文中按真实顺序走一遍，每个交接点标出对应的类、日志和 trace，方便对照自己的现场。</p>
               <a class="readmore" href="/posts/android-app-launch-flow">
                 Read more
                 <span class="trail" aria-hidden="true">
@@ -244,8 +243,8 @@
             </article>
             <article class="post-item">
               <h3><a href="/posts/typography-experiment">把博客当成排版实验</a></h3>
-              <p class="post-item__sub">与其写一段 “Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去。这既是第一篇，也是这套排版的验收报告。</p>
-              <p class="post-item__excerpt">与其写一段 “Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去：字、行、代码、卡片、图、交互。这既是第一篇，也是这套排版的验收报告。</p>
+              <p class="post-item__sub">这套排版的字、行、卡片与交互</p>
+              <p class="post-item__excerpt">这套博客的字号、行宽、代码块、卡片和交互，都是在这里一次一次试出来的。第一篇写的就是这套排版本身：行宽为什么定在 40 字，代码块为什么不做成插图，卡片的三种语气分别用在哪。</p>
               <a class="readmore" href="/posts/typography-experiment">
                 Read more
                 <span class="trail" aria-hidden="true">
@@ -303,7 +302,7 @@
             <section id="about">
               <h2 class="label">About this site</h2>
               <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #4c5361">
-                没有算法推荐，没有信息流，没有弹窗。Markdown 写完构建成静态 HTML，零依赖、零第三方脚本。
+                整站是静态文件，Markdown 写成，构建后就是一堆 HTML。
               </p>
             </section>
           </aside>
@@ -337,9 +336,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

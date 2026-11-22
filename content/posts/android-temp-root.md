@@ -1,7 +1,7 @@
 ---
 title: 一次开机内的 root：Android 临时 Root 的技术链路
-dek: 一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。
-excerpt: Bootloader 锁着，su 却能用。这条链路根本不动启动链——它在已经跑起来的系统里把内核改掉。从权限原语、任意读写，到把 KernelSU 装进活动内核，逐段拆开。
+dek: 不依赖 Bootloader 解锁的内核态提权
+excerpt: 设备没解 BL，su 也能用。这类临时 root 不动启动链，而是在已经跑起来的系统里改内核，再把 KernelSU 装进去。文中按权限原语、任意读写、内核加载三段拆开。
 date: 2026-11-23
 minutes: 45
 tag: Android

@@ -113,14 +113,13 @@
 
             <div class="promo">
               <p>
-                ✏️ <strong>这里是草稿本。</strong>
-                我在这里记下 Android、工具、排版，和那些看起来很小、用起来很大的东西。
+                <strong>这里是潦草地。</strong>它是我的学习「草稿本」——记下我对技术的理解，也记下还没想明白的地方。
               </p>
               <p>
-                文章都是先潦草地写在纸上，再誊到这里。没有日更，没有追热点——想清楚了才写，写完改三遍再发。
+                大多会是 Android，偶尔也写点别的。希望它能见证自己的成长。 🌱
               </p>
               <a class="promo__btn" href="{{NEWEST}}">
-                翻开第一篇
+                最近一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
@@ -204,7 +203,7 @@
             <section id="about">
               <h2 class="label">About this site</h2>
               <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #4c5361">
-                没有算法推荐，没有信息流，没有弹窗。Markdown 写完构建成静态 HTML，零依赖、零第三方脚本。
+                整站是静态文件，Markdown 写成，构建后就是一堆 HTML。
               </p>
             </section>
           </aside>
@@ -238,9 +237,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

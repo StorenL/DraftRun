@@ -1,7 +1,7 @@
 ---
 title: 从图标到第一帧：Android 应用启动流程
-dek: 应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。
-excerpt: 一次冷启动要横跨 Launcher、system_server、Zygote、应用进程四个进程。按真实顺序走一遍，把每个交接点落到具体的类、日志和 trace 上，你才知道时间里哪一段是可以动的。
+dek: 冷启动的十四个阶段与对应的 trace
+excerpt: 一次冷启动横跨 Launcher、system_server、Zygote 和应用进程，中间交接十几次。文中按真实顺序走一遍，每个交接点标出对应的类、日志和 trace，方便对照自己的现场。
 date: 2026-11-22
 minutes: 40
 tag: Android

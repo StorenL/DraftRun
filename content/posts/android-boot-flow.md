@@ -1,7 +1,7 @@
 ---
 title: 从电源键到首帧：Android 系统启动流程
-dek: 用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。
-excerpt: 从电源键按下的那一毫秒开始，到桌面画上第一帧结束：Boot ROM、Bootloader、内核、init、Zygote、SystemServer，每一棒交出去之后，你该用什么工具看见它。
+dek: 从 Boot ROM 到桌面首帧的六次交接
+excerpt: 电源键按下到桌面画出第一帧，中间经过 Boot ROM、Bootloader、内核、init、Zygote 和 SystemServer 六次交接。每段都写了它能产出什么日志、卡住时该看哪里。
 date: 2026-11-23
 minutes: 20
 tag: Android

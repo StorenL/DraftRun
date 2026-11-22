@@ -1,7 +1,7 @@
 ---
 title: 一次跨进程调用有多远：Android Binder 进程通信机制
-dek: 一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。
-excerpt: 主线程停在 getPackageInfo 上 2.3 秒，可这一行什么都没做。按真实顺序把一次跨进程调用拆开，看时间停在哪一段、线程池怎么排队、以及为什么会收到 TransactionTooLarge。
+dek: 从 Java 调用到内核事务队列的完整链路
+excerpt: 主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。
 date: 2026-11-23
 minutes: 55
 tag: Android

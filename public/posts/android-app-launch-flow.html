@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>从图标到第一帧：Android 应用启动流程 · 潦草地</title>
-    <meta name="description" content="应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。" />
+    <meta name="description" content="冷启动的十四个阶段与对应的 trace" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
       (function () {
@@ -23,7 +23,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="潦草地" />
     <meta property="og:title" content="从图标到第一帧：Android 应用启动流程" />
-    <meta property="og:description" content="应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。" />
+    <meta property="og:description" content="冷启动的十四个阶段与对应的 trace" />
     <meta property="og:url" content="https://draft.run/posts/android-app-launch-flow" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
@@ -84,7 +84,7 @@
       <div class="wrap post-head">
         <p class="post-kicker">Android</p>
         <h1 class="post-title">从图标到第一帧：Android 应用启动流程</h1>
-        <p class="post-dek">应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。</p>
+        <p class="post-dek">冷启动的十四个阶段与对应的 trace</p>
         <p class="post-meta">
           <span>首发于 <a href="/">2026 年 11 月 22 日</a></span>
           <span class="sep">·</span>
@@ -993,9 +993,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

@@ -5,7 +5,7 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Sun, 22 Nov 2026 17:48:55 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 22 Nov 2026 18:18:17 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
@@ -13,7 +13,7 @@
       <guid isPermaLink="true">https://draft.run/posts/android-binder-ipc</guid>
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
-      <description><![CDATA[<p>一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。</p>]]></description>
+      <description><![CDATA[<p>从 Java 调用到内核事务队列的完整链路</p>]]></description>
     </item>
     <item>
       <title>从电源键到首帧：Android 系统启动流程</title>
@@ -21,7 +21,7 @@
       <guid isPermaLink="true">https://draft.run/posts/android-boot-flow</guid>
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
-      <description><![CDATA[<p>用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>]]></description>
+      <description><![CDATA[<p>从 Boot ROM 到桌面首帧的六次交接</p>]]></description>
     </item>
     <item>
       <title>一次开机内的 root：Android 临时 Root 的技术链路</title>
@@ -29,7 +29,7 @@
       <guid isPermaLink="true">https://draft.run/posts/android-temp-root</guid>
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
-      <description><![CDATA[<p>一台没解 BL 的手机也能拿到 uid=0。把 root 拆成「身份」和「会话」两个问题，就能看懂 2026 年这波临时 root 到底在改什么。</p>]]></description>
+      <description><![CDATA[<p>不依赖 Bootloader 解锁的内核态提权</p>]]></description>
     </item>
     <item>
       <title>从图标到第一帧：Android 应用启动流程</title>
@@ -37,7 +37,7 @@
       <guid isPermaLink="true">https://draft.run/posts/android-app-launch-flow</guid>
       <pubDate>Sun, 22 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
-      <description><![CDATA[<p>应用启动常被压缩成一句「AMS 通过 socket 通知 Zygote fork 一个进程」。这句话没错，但它把横跨四个进程的十几次调用压成了一个名词。</p>]]></description>
+      <description><![CDATA[<p>冷启动的十四个阶段与对应的 trace</p>]]></description>
     </item>
     <item>
       <title>把博客当成排版实验</title>
@@ -45,7 +45,7 @@
       <guid isPermaLink="true">https://draft.run/posts/typography-experiment</guid>
       <pubDate>Sat, 21 Nov 2026 09:00:00 +0000</pubDate>
       <category>排版</category>
-      <description><![CDATA[<p>与其写一段 “Hello World”，不如把整站的设计系统摊在桌上，一件一件试过去。这既是第一篇，也是这套排版的验收报告。</p>]]></description>
+      <description><![CDATA[<p>这套排版的字、行、卡片与交互</p>]]></description>
     </item>
   </channel>
 </rss>

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>一次跨进程调用有多远：Android Binder 进程通信机制 · 潦草地</title>
-    <meta name="description" content="一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。" />
+    <meta name="description" content="从 Java 调用到内核事务队列的完整链路" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
       (function () {
@@ -23,7 +23,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="潦草地" />
     <meta property="og:title" content="一次跨进程调用有多远：Android Binder 进程通信机制" />
-    <meta property="og:description" content="一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。" />
+    <meta property="og:description" content="从 Java 调用到内核事务队列的完整链路" />
     <meta property="og:url" content="https://draft.run/posts/android-binder-ipc" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
@@ -84,7 +84,7 @@
       <div class="wrap post-head">
         <p class="post-kicker">Android</p>
         <h1 class="post-title">一次跨进程调用有多远：Android Binder 进程通信机制</h1>
-        <p class="post-dek">一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。</p>
+        <p class="post-dek">从 Java 调用到内核事务队列的完整链路</p>
         <p class="post-meta">
           <span>首发于 <a href="/">2026 年 11 月 23 日</a></span>
           <span class="sep">·</span>
@@ -1321,9 +1321,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

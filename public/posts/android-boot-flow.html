@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>从电源键到首帧：Android 系统启动流程 · 潦草地</title>
-    <meta name="description" content="用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。" />
+    <meta name="description" content="从 Boot ROM 到桌面首帧的六次交接" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
       (function () {
@@ -23,7 +23,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="潦草地" />
     <meta property="og:title" content="从电源键到首帧：Android 系统启动流程" />
-    <meta property="og:description" content="用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。" />
+    <meta property="og:description" content="从 Boot ROM 到桌面首帧的六次交接" />
     <meta property="og:url" content="https://draft.run/posts/android-boot-flow" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
@@ -84,7 +84,7 @@
       <div class="wrap post-head">
         <p class="post-kicker">Android</p>
         <h1 class="post-title">从电源键到首帧：Android 系统启动流程</h1>
-        <p class="post-dek">用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>
+        <p class="post-dek">从 Boot ROM 到桌面首帧的六次交接</p>
         <p class="post-meta">
           <span>首发于 <a href="/">2026 年 11 月 23 日</a></span>
           <span class="sep">·</span>
@@ -522,9 +522,14 @@
         if (themeBtn) {
           syncTheme();
           themeBtn.addEventListener("click", function () {
-            var next =
-              document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-            document.documentElement.dataset.theme = next;
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
             try {
               localStorage.setItem("lc-theme", next);
             } catch (e) {}

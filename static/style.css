@@ -587,7 +587,7 @@ a {
 
 /* 文章：纯文字块 */
 .post-item {
-  margin-bottom: 46px;
+  margin-bottom: 66px;
 }
 .post-item:nth-child(2) {
   animation-delay: 0.05s;
@@ -618,24 +618,24 @@ a {
   text-underline-offset: 5px;
 }
 .post-item__sub {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-size: 17px;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--muted);
 }
 .post-item__excerpt {
-  margin: 16px 0 0;
+  margin: 20px 0 0;
   font-size: 16px;
   font-weight: 400;
-  line-height: 1.7;
+  line-height: 1.62;
   color: var(--body-ink);
 }
 .readmore {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 22px;
   font-size: 16px;
   font-weight: 600;
   color: var(--ink);
@@ -1728,5 +1728,44 @@ a {
     border: 1px solid var(--line-2);
     border-radius: 8px;
     font-size: 14px;
+  }
+}
+/* ==========================================================================
+   主题切换：只在切换的 600ms 内打开全局颜色过渡
+   分两层——文字和细部先变，天空和页脚慢半拍
+   ========================================================================== */
+html.is-swapping,
+html.is-swapping *,
+html.is-swapping *::before,
+html.is-swapping *::after {
+  transition:
+    background-color 350ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    color 350ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    border-color 350ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    fill 350ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    stroke 350ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    box-shadow 350ms cubic-bezier(0.41, 0.1, 0.13, 1) !important;
+  transition-delay: 0s !important;
+}
+
+/* 天空、云、页脚这种大色块慢一点，像光线在变 */
+html.is-swapping .hero__sky,
+html.is-swapping .clouds,
+html.is-swapping .footer,
+html.is-swapping .footer__cloud,
+html.is-swapping .promo {
+  transition:
+    background-color 560ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    color 560ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    fill 560ms cubic-bezier(0.41, 0.1, 0.13, 1),
+    border-color 560ms cubic-bezier(0.41, 0.1, 0.13, 1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-swapping,
+  html.is-swapping *,
+  html.is-swapping *::before,
+  html.is-swapping *::after {
+    transition: none !important;
   }
 }
