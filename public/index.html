@@ -119,7 +119,7 @@
               <p>
                 文章都是先潦草地写在纸上，再誊到这里。没有日更，没有追热点——想清楚了才写，写完改三遍再发。
               </p>
-              <a class="promo__btn" href="/posts/android-boot-flow">
+              <a class="promo__btn" href="/posts/android-binder-ipc">
                 翻开第一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -187,6 +187,20 @@
             <h2 class="label">Articles and tutorials</h2>
 
             <article class="post-item">
+              <h3><a href="/posts/android-binder-ipc">一次跨进程调用有多远：Android Binder 进程通信机制</a></h3>
+              <p class="post-item__sub">一次看起来普通的方法调用，为什么会让主线程停 2.3 秒。把 Binder 从名词拆回链路：Java 调用、Parcel、内核队列、binder 线程池，再回到 onTransact。</p>
+              <p class="post-item__excerpt">主线程停在 getPackageInfo 上 2.3 秒，可这一行什么都没做。按真实顺序把一次跨进程调用拆开，看时间停在哪一段、线程池怎么排队、以及为什么会收到 TransactionTooLarge。</p>
+              <a class="readmore" href="/posts/android-binder-ipc">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
+            <article class="post-item">
               <h3><a href="/posts/android-boot-flow">从电源键到首帧：Android 系统启动流程</a></h3>
               <p class="post-item__sub">用户说的“开不了机”能对应十几种完全不同的故障。这篇按时间顺序把启动链走一遍，看每个环节是谁在跑、卡住时该去哪里找证据。</p>
               <p class="post-item__excerpt">从电源键按下的那一毫秒开始，到桌面画上第一帧结束：Boot ROM、Bootloader、内核、init、Zygote、SystemServer，每一棒交出去之后，你该用什么工具看见它。</p>
@@ -241,6 +255,12 @@
             <section>
               <h2 class="label">Popular content</h2>
               <ul class="popular"><li>
+                  <a href="/posts/android-binder-ipc">
+                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
+                    <span>一次跨进程调用有多远：Android Binder 进程通信机制</span>
+                  </a>
+                </li>
+                <li>
                   <a href="/posts/android-boot-flow">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>从电源键到首帧：Android 系统启动流程</span>
