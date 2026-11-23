@@ -9,6 +9,7 @@
     python tools/build.py --new          新建一篇草稿
 """
 
+import hashlib
 import html
 import json
 import re
@@ -382,6 +383,26 @@ SHOWMORE = '''<div class="showmore-wrap">
             </div>'''
 
 
+# 纯中文标签没有可用的 URL slug，在这里显式映射；新增中文标签记得补
+TAG_SLUGS = {"排版": "typography", "笔记": "notes"}
+
+
+def tag_slug(tag):
+    slug = re.sub(r"[^a-z0-9]+", "-", tag.lower()).strip("-")
+    if slug:
+        return slug
+    mapped = TAG_SLUGS.get(tag)
+    if mapped:
+        return mapped
+    return "t-" + hashlib.md5(tag.encode("utf-8")).hexdigest()[:6]
+
+
+def collect_tags(posts):
+    """{标签: [文章]}，按文章数倒序。"""
+    groups = {}
+    for p in posts:
+        groups.setdefault(p.get("tag", "笔记"), []).append(p)
+    return dict(sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])))
 def render_archive(posts):
     """归档页：扁平列表，只列标题和分类。
 
@@ -400,6 +421,89 @@ def render_archive(posts):
         )
     return (tpl.replace("{{COUNT}}", f"共 {len(posts)} 篇")
                .replace("<!--ARCHIVE-->", '<ul class="archive__rows">' + "".join(rows) + "</ul>"))
+
+def render_categories(posts):
+    """分类索引：一行一个分类，带文章数。"""
+    tpl = (TEMPLATES / "categories.html").read_text(encoding="utf-8")
+    tags = collect_tags(posts)
+    rows = []
+    for tag, items in tags.items():
+        rows.append(
+            f'<li class="archive__row">'
+            f'<a href="/categories/{tag_slug(tag)}">'
+            f'<span class="archive__name">{html.escape(tag)}</span>'
+            f'<span class="archive__tag">{len(items)} 篇</span>'
+            f"</a></li>"
+        )
+    return (
+        tpl.replace("{{DESC}}", "潦草地的全部文章分类。")
+        .replace("{{LABEL}}", "CATEGORIES")
+        .replace("{{HEADING}}", "分类")
+        .replace("{{SUB}}", f"共 {len(tags)} 个分类")
+        .replace("<!--CHIPS-->", "")
+        .replace("<!--ROWS-->", '<ul class="archive__rows">' + "".join(rows) + "</ul>")
+    )
+
+
+def render_category(tag, items, all_tags):
+    """单个分类下的文章列表，顶部带切换用的标签行。"""
+    tpl = (TEMPLATES / "category.html").read_text(encoding="utf-8")
+    rows = []
+    for p in items:
+        rows.append(
+            f'<li class="archive__row">'
+            f'<a href="/posts/{p["slug"]}">'
+            f'<span class="archive__name">{html.escape(p["title"])}</span>'
+            f'<span class="archive__tag">{html.escape(p.get("dek", ""))}</span>'
+            f"</a></li>"
+        )
+    chips = "".join(
+        f'<a class="cat-chip{" is-active" if t == tag else ""}" '
+        f'href="/categories/{tag_slug(t)}">{html.escape(t)}'
+        f'<span>{len(v)}</span></a>'
+        for t, v in all_tags.items()
+    )
+    return (
+        tpl.replace("{{DESC}}", f"潦草地中「{html.escape(tag)}」分类下的全部文章。")
+        .replace("{{LABEL}}", "CATEGORY")
+        .replace("{{HEADING}}", html.escape(tag))
+        .replace("{{SUB}}", f"{len(items)} 篇")
+        .replace("<!--CHIPS-->", f'<nav class="cat-chips">{chips}</nav>')
+        .replace("<!--ROWS-->", '<ul class="archive__rows">' + "".join(rows) + "</ul>")
+    )
+
+
+def render_search_index(posts):
+    """搜索索引：标题、副标题、摘要、标签、小节标题。不含正文，控制体积。"""
+    entries = []
+    for p in posts:
+        heads = re.findall(r"(?m)^##\s+(.+)$", p["_body"])
+        entries.append({
+            "url": f"/posts/{p['slug']}",
+            "title": p["title"],
+            "dek": p.get("dek", ""),
+            "tag": p.get("tag", ""),
+            "excerpt": p.get("excerpt", ""),
+            "headings": [h.strip() for h in heads],
+        })
+    return json.dumps(entries, ensure_ascii=False, separators=(",", ":"))
+
+
+def render_body_index(posts):
+    """正文索引：去掉代码块、图片和标记后的纯文本，供搜索深层匹配。
+
+    单独一个文件，体积约 400KB，只在用户打开搜索时后台加载。
+    """
+    rows = {}
+    for p in posts:
+        text = p["_body"]
+        text = re.sub(r"```.*?```", " ", text, flags=re.S)
+        text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)
+        text = re.sub(r"\[([^\]]*)\]\(([^)]*)\)", r"\1", text)
+        text = re.sub(r"[#>*`|_\-]", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        rows[f"/posts/{p['slug']}"] = text
+    return json.dumps(rows, ensure_ascii=False, separators=(",", ":"))
 
 def render_index(posts):
     tpl = (TEMPLATES / "index.html").read_text(encoding="utf-8")
@@ -429,7 +533,7 @@ def render_index(posts):
         if tag:
             counts[tag] = counts.get(tag, 0) + 1
     cats = "\n              ".join(
-        f'<li><a href="/#writing">{html.escape(t)}</a></li>'
+        f'<li><a href="/categories/{tag_slug(t)}">{html.escape(t)}</a></li>'
         for t, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
     )
 
@@ -470,6 +574,15 @@ def render_sitemap(posts):
         f"  <url>\n    <loc>{SITE}/archive</loc>\n    <lastmod>{date.today()}</lastmod>\n"
         f"    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>"
     )
+    urls.append(
+        f"  <url>\n    <loc>{SITE}/categories</loc>\n    <lastmod>{date.today()}</lastmod>\n"
+        f"    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>"
+    )
+    for tag in collect_tags(posts):
+        urls.append(
+            f"  <url>\n    <loc>{SITE}/categories/{tag_slug(tag)}</loc>\n    <lastmod>{date.today()}</lastmod>\n"
+            f"    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>"
+        )
     for p in posts:
         urls.append(
             f"  <url>\n    <loc>{SITE}/posts/{p['slug']}</loc>\n    <lastmod>{p['date']}</lastmod>\n"
@@ -652,6 +765,26 @@ def main():
 
     (PUBLIC / "index.html").write_text(render_index(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "archive.html").write_text(render_archive(posts), encoding="utf-8", newline="\n")
+
+    # 分类页
+    tags = collect_tags(posts)
+    cats_dir = PUBLIC / "categories"
+    cats_dir.mkdir()
+    (PUBLIC / "categories.html").write_text(render_categories(posts), encoding="utf-8", newline="\n")
+    for tag, items in tags.items():
+        (cats_dir / f"{tag_slug(tag)}.html").write_text(
+            render_category(tag, items, tags), encoding="utf-8", newline="\n"
+        )
+    print(f"  categories/  （{len(tags)} 个分类：{'、'.join(tags)}）")
+    for tag in tags:
+        if not re.search(r"[a-z0-9]", tag, re.I) and tag not in TAG_SLUGS:
+            print(f"  ! 分类「{tag}」没有 URL 映射，已用哈希代替；在 build.py 的 TAG_SLUGS 里加一条更可读")
+
+    # 搜索索引，前端按需拉取
+    (PUBLIC / "search.json").write_text(render_search_index(posts), encoding="utf-8", newline="\n")
+    body_index = render_body_index(posts)
+    (PUBLIC / "search-body.json").write_text(body_index, encoding="utf-8", newline="\n")
+    print(f"  search.json + search-body.json （{len(body_index.encode('utf-8')) // 1024}KB 正文索引）")
     print(f"  archive.html  （全部 {len(posts)} 篇）")
     (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8", newline="\n")
