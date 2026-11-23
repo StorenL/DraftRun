@@ -5,7 +5,7 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Mon, 23 Nov 2026 00:17:44 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 23 Nov 2026 00:21:59 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
@@ -22,6 +22,14 @@
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
       <description><![CDATA[<p>从 Boot ROM 到桌面首帧的六次交接</p>]]></description>
+    </item>
+    <item>
+      <title>从 onMeasure 到 MeasurePolicy：Android 自定义控件的两条路</title>
+      <link>https://draft.run/posts/android-custom-widgets</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-custom-widgets</guid>
+      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>View 与 Compose 两套测量模型的对照</p>]]></description>
     </item>
     <item>
       <title>一次开机内的 root：Android 临时 Root 的技术链路</title>

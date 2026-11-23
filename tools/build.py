@@ -438,7 +438,9 @@ def render_index(posts):
             .replace("<!--CATEGORIES-->", cats)
             .replace("<!--POPULAR-->", popular)
             # 文章不足 6 篇时不显示 Show more
-            .replace("<!--SHOWMORE-->", showmore if len(posts) >= 6 else ""))
+            # 首页目前渲染全部文章，Show more 没有可展开的内容，先不输出；
+            # 等做出归档页再挂上去。
+            .replace("<!--SHOWMORE-->", ""))
 
 
 def render_sitemap(posts):
