@@ -1894,6 +1894,9 @@ html.is-swapping .promo {
    ========================================================================== */
 html.is-searching {
   overflow: hidden;
+  /* 滚动条一消失，整页会横向跳 7px。
+     在锁滚动的同时把槽位补上，宽度不变，也就不跳了。 */
+  scrollbar-gutter: stable;
 }
 .search {
   position: fixed;

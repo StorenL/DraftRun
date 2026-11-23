@@ -88,6 +88,7 @@ git add -A && git commit -m "post: 标题" && git push
 | 线上还是旧内容 | 忘了跑 `build.py` 就 push | 跑一遍再提交 |
 | 手机端目录在底部 | 900px 断点没生效 | 检查 `.post-layout` 在窄屏是否 `display:flex` + `align-items:stretch` |
 | 右侧目录空白 | 模板里 `{{TOC}}` 丢了 | 查 `templates/post.html` |
+| 打开搜索/弹窗时页面横向跳一下 | 锁滚动让滚动条消失，居中内容右移半个滚动条宽 | `html.is-searching` 里加 `scrollbar-gutter: stable` |
 
 ---
 
