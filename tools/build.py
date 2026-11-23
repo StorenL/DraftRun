@@ -14,6 +14,10 @@ import json
 import re
 import shutil
 import sys
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -499,6 +503,78 @@ def load_posts():
     return posts
 
 
+# ---------------------------------------------------------------- 发布前检查
+
+REQUIRED = ("title", "dek", "excerpt", "date", "minutes", "tag")
+DEK_MAX = 34      # 副标题超过这个长度就会折行，列表会显得乱
+EXCERPT_MIN, EXCERPT_MAX = 50, 180
+
+
+def validate(posts):
+    """检查那些肉眼容易漏、但机器一眼能看出的问题。有问题就拒绝构建。"""
+    problems = []
+    seen_titles = {}
+
+    for p in posts:
+        name = p["_path"].name
+        for key in REQUIRED:
+            if not p.get(key):
+                problems.append(f"{name}: 缺 front matter 字段 `{key}`")
+
+        title = p.get("title", "")
+        if title in seen_titles:
+            problems.append(f"{name}: 标题与 {seen_titles[title]} 重复")
+        seen_titles[title] = name
+
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", p.get("date", "")):
+            problems.append(f"{name}: date 必须是 YYYY-MM-DD，现在是 {p.get('date')!r}")
+
+        if not p.get("minutes", "").isdigit():
+            problems.append(f"{name}: minutes 必须是数字")
+
+        dek = p.get("dek", "")
+        if len(dek) > DEK_MAX:
+            problems.append(
+                f"{name}: 副标题 {len(dek)} 字，超过 {DEK_MAX} 字会在列表里折行，"
+                f"把解释留给 excerpt"
+            )
+
+        exc = p.get("excerpt", "")
+        if not (EXCERPT_MIN <= len(exc) <= EXCERPT_MAX):
+            problems.append(
+                f"{name}: 摘要 {len(exc)} 字，建议 {EXCERPT_MIN}-{EXCERPT_MAX} 字"
+            )
+
+        body = p["_body"]
+        if re.search(r"!\[[^\]]*\]\(images/", body):
+            problems.append(f"{name}: 图片用了相对路径 images/，构建后会被解析到 /posts/images/")
+
+        for src in re.findall(r"!\[[^\]]*\]\((/images/[^)]+)\)", body):
+            if not (ROOT / "static" / src.lstrip("/")).exists():
+                problems.append(f"{name}: 引用的图片不存在 {src}")
+
+        if re.search(r"\n-{3,}\s*\n+\*[^*].*\*\s*$", body.strip() + "\n"):
+            problems.append(f"{name}: 文末还留着「--- + 斜体免责声明」，应该挪进 note")
+
+    # 文件编码：带 BOM 会让 _headers 之类的配置解析失败
+    for folder in (ROOT / "static", ROOT / "templates", CONTENT):
+        if not folder.exists():
+            continue
+        for f in folder.rglob("*"):
+            if f.is_file() and f.suffix in {".css", ".html", ".md", ".xml", ".txt", ".svg"} or f.name == "_headers":
+                if f.read_bytes()[:3] == b"\xef\xbb\xbf":
+                    problems.append(f"{f.name}: 文件带 BOM")
+
+    if problems:
+        print("\n发布前检查未通过：")
+        for item in problems:
+            print(f"  x  {item}")
+        print(f"\n共 {len(problems)} 处。改完再跑一次 python tools/build.py")
+        raise SystemExit(1)
+
+    print(f"  发布前检查通过（{len(posts)} 篇）")
+
+
 def new_post():
     slug = input("文件名（英文或数字，用连字符，例如 no-framework-search）：").strip()
     title = input("标题：").strip()
@@ -523,6 +599,8 @@ def main():
     posts = load_posts()
     if not posts:
         raise SystemExit("content/posts/ 里没有文章")
+
+    validate(posts)
 
     # 每次全量重建，避免删掉的文章留下孤儿页面
     if PUBLIC.exists():
