@@ -3,6 +3,7 @@ title: 从电源键到首帧：Android 系统启动流程
 dek: 从 Boot ROM 到桌面首帧的六次交接
 excerpt: 电源键按下到桌面画出第一帧，中间经过 Boot ROM、Bootloader、内核、init、Zygote 和 SystemServer 六次交接。每段都写了它能产出什么日志、卡住时该看哪里。
 date: 2026-11-23
+time: 01:05
 minutes: 20
 tag: Android
 hot: true

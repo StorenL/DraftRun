@@ -18,7 +18,7 @@
 import argparse
 import re
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from PIL import Image
@@ -151,8 +151,9 @@ def main():
     minutes = args.minutes or auto.get("minutes", "10")
     tag = args.tag or auto.get("tag", "笔记")
 
+    clock = datetime.now().strftime("%H:%M")
     front = ["---", f"title: {title}", f"dek: {args.dek}", f"excerpt: {args.excerpt}",
-             f"date: {args.date}", f"minutes: {minutes}", f"tag: {tag}"]
+             f"date: {args.date}", f"time: {clock}", f"minutes: {minutes}", f"tag: {tag}"]
     if args.hot:
         front.append("hot: true")
     front += [f"note: {args.note}", "---", ""]

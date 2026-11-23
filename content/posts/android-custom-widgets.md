@@ -3,6 +3,7 @@ title: 从 onMeasure 到 MeasurePolicy：Android 自定义控件的两条路
 dek: View 与 Compose 两套测量模型的对照
 excerpt: 一个评分环，先用 ProgressBar 改，两天后 QA 提了三个问题。文章从这次返工出发，把 View 的 onMeasure 与 Compose 的 MeasurePolicy 两套测量模型摊开对比，再走一遍绘制、触摸、无障碍和两者互操作。
 date: 2026-11-23
+time: 08:16
 minutes: 70
 tag: Android
 hot: true

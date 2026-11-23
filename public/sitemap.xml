@@ -7,13 +7,13 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://draft.run/posts/android-binder-ipc</loc>
+    <loc>https://draft.run/archive</loc>
     <lastmod>2026-11-23</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://draft.run/posts/android-boot-flow</loc>
+    <loc>https://draft.run/posts/super-agent-architecture</loc>
     <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -31,7 +31,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://draft.run/posts/super-agent-architecture</loc>
+    <loc>https://draft.run/posts/android-binder-ipc</loc>
+    <lastmod>2026-11-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://draft.run/posts/android-boot-flow</loc>
     <lastmod>2026-11-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

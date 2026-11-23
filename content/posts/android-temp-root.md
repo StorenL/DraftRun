@@ -3,6 +3,7 @@ title: 一次开机内的 root：Android 临时 Root 的技术链路
 dek: 不依赖 Bootloader 解锁的内核态提权
 excerpt: 设备没解 BL，su 也能用。这类临时 root 不动启动链，而是在已经跑起来的系统里改内核，再把 KernelSU 装进去。文中按权限原语、任意读写、内核加载三段拆开。
 date: 2026-11-23
+time: 02:17
 minutes: 45
 tag: Android
 hot: true

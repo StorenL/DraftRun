@@ -3,6 +3,7 @@ title: 一次跨进程调用有多远：Android Binder 进程通信机制
 dek: 从 Java 调用到内核事务队列的完整链路
 excerpt: 主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。
 date: 2026-11-23
+time: 01:44
 minutes: 55
 tag: Android
 hot: true

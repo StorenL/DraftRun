@@ -3,6 +3,7 @@ title: 从会话到常驻：DeepSeek Super-agent 架构拆解
 dek: 常驻 Agent 的模块划分与消息链路
 excerpt: 这条链路分成两层：常驻的调度层，和按需启动的执行层。文章按官方原文与原型实现，拆开模块划分、消息批处理、触发条件、订阅回传和实验设计。
 date: 2026-11-23
+time: 08:30
 minutes: 50
 tag: Agent
 hot: true

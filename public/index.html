@@ -118,7 +118,7 @@
               <p>
                 大多会是 Android，偶尔也写点别的。希望它能见证自己的成长。 🌱
               </p>
-              <a class="promo__btn" href="/posts/android-binder-ipc">
+              <a class="promo__btn" href="/posts/super-agent-architecture">
                 最近一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -186,24 +186,10 @@
             <h2 class="label">Articles and tutorials</h2>
 
             <article class="post-item">
-              <h3><a href="/posts/android-binder-ipc">一次跨进程调用有多远：Android Binder 进程通信机制</a></h3>
-              <p class="post-item__sub">从 Java 调用到内核事务队列的完整链路</p>
-              <p class="post-item__excerpt">主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。</p>
-              <a class="readmore" href="/posts/android-binder-ipc">
-                Read more
-                <span class="trail" aria-hidden="true">
-                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                </span>
-              </a>
-            </article>
-            <article class="post-item">
-              <h3><a href="/posts/android-boot-flow">从电源键到首帧：Android 系统启动流程</a></h3>
-              <p class="post-item__sub">从 Boot ROM 到桌面首帧的六次交接</p>
-              <p class="post-item__excerpt">电源键按下到桌面画出第一帧，中间经过 Boot ROM、Bootloader、内核、init、Zygote 和 SystemServer 六次交接。每段都写了它能产出什么日志、卡住时该看哪里。</p>
-              <a class="readmore" href="/posts/android-boot-flow">
+              <h3><a href="/posts/super-agent-architecture">从会话到常驻：DeepSeek Super-agent 架构拆解</a></h3>
+              <p class="post-item__sub">常驻 Agent 的模块划分与消息链路</p>
+              <p class="post-item__excerpt">这条链路分成两层：常驻的调度层，和按需启动的执行层。文章按官方原文与原型实现，拆开模块划分、消息批处理、触发条件、订阅回传和实验设计。</p>
+              <a class="readmore" href="/posts/super-agent-architecture">
                 Read more
                 <span class="trail" aria-hidden="true">
                   <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
@@ -242,10 +228,24 @@
               </a>
             </article>
             <article class="post-item">
-              <h3><a href="/posts/super-agent-architecture">从会话到常驻：DeepSeek Super-agent 架构拆解</a></h3>
-              <p class="post-item__sub">常驻 Agent 的模块划分与消息链路</p>
-              <p class="post-item__excerpt">这条链路分成两层：常驻的调度层，和按需启动的执行层。文章按官方原文与原型实现，拆开模块划分、消息批处理、触发条件、订阅回传和实验设计。</p>
-              <a class="readmore" href="/posts/super-agent-architecture">
+              <h3><a href="/posts/android-binder-ipc">一次跨进程调用有多远：Android Binder 进程通信机制</a></h3>
+              <p class="post-item__sub">从 Java 调用到内核事务队列的完整链路</p>
+              <p class="post-item__excerpt">主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。</p>
+              <a class="readmore" href="/posts/android-binder-ipc">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
+            <article class="post-item">
+              <h3><a href="/posts/android-boot-flow">从电源键到首帧：Android 系统启动流程</a></h3>
+              <p class="post-item__sub">从 Boot ROM 到桌面首帧的六次交接</p>
+              <p class="post-item__excerpt">电源键按下到桌面画出第一帧，中间经过 Boot ROM、Bootloader、内核、init、Zygote 和 SystemServer 六次交接。每段都写了它能产出什么日志、卡住时该看哪里。</p>
+              <a class="readmore" href="/posts/android-boot-flow">
                 Read more
                 <span class="trail" aria-hidden="true">
                   <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
@@ -269,21 +269,14 @@
                 </span>
               </a>
             </article>
-            <article class="post-item">
-              <h3><a href="/posts/typography-experiment">把博客当成排版实验</a></h3>
-              <p class="post-item__sub">这套排版的字、行、卡片与交互</p>
-              <p class="post-item__excerpt">这套博客的字号、行宽、代码块、卡片和交互，都是在这里一次一次试出来的。第一篇写的就是这套排版本身：行宽为什么定在 40 字，代码块为什么不做成插图，卡片的三种语气分别用在哪。</p>
-              <a class="readmore" href="/posts/typography-experiment">
-                Read more
-                <span class="trail" aria-hidden="true">
-                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                </span>
+            <div class="showmore-wrap">
+              <a class="showmore" href="/archive">
+                全部 7 篇
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
+                </svg>
               </a>
-            </article>
-            
+            </div>
           </div>
 
           <aside class="sidebar">
@@ -297,15 +290,9 @@
             <section>
               <h2 class="label">Popular content</h2>
               <ul class="popular"><li>
-                  <a href="/posts/android-binder-ipc">
+                  <a href="/posts/super-agent-architecture">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
-                    <span>一次跨进程调用有多远：Android Binder 进程通信机制</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/posts/android-boot-flow">
-                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
-                    <span>从电源键到首帧：Android 系统启动流程</span>
+                    <span>从会话到常驻：DeepSeek Super-agent 架构拆解</span>
                   </a>
                 </li>
                 <li>
@@ -321,9 +308,15 @@
                   </a>
                 </li>
                 <li>
-                  <a href="/posts/super-agent-architecture">
+                  <a href="/posts/android-binder-ipc">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
-                    <span>从会话到常驻：DeepSeek Super-agent 架构拆解</span>
+                    <span>一次跨进程调用有多远：Android Binder 进程通信机制</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="/posts/android-boot-flow">
+                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
+                    <span>从电源键到首帧：Android 系统启动流程</span>
                   </a>
                 </li></ul>
             </section>

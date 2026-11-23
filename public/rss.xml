@@ -5,23 +5,15 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Mon, 23 Nov 2026 00:24:07 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 23 Nov 2026 00:32:25 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
-      <link>https://draft.run/posts/android-binder-ipc</link>
-      <guid isPermaLink="true">https://draft.run/posts/android-binder-ipc</guid>
+      <title>从会话到常驻：DeepSeek Super-agent 架构拆解</title>
+      <link>https://draft.run/posts/super-agent-architecture</link>
+      <guid isPermaLink="true">https://draft.run/posts/super-agent-architecture</guid>
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
-      <category>Android</category>
-      <description><![CDATA[<p>从 Java 调用到内核事务队列的完整链路</p>]]></description>
-    </item>
-    <item>
-      <title>从电源键到首帧：Android 系统启动流程</title>
-      <link>https://draft.run/posts/android-boot-flow</link>
-      <guid isPermaLink="true">https://draft.run/posts/android-boot-flow</guid>
-      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
-      <category>Android</category>
-      <description><![CDATA[<p>从 Boot ROM 到桌面首帧的六次交接</p>]]></description>
+      <category>Agent</category>
+      <description><![CDATA[<p>常驻 Agent 的模块划分与消息链路</p>]]></description>
     </item>
     <item>
       <title>从 onMeasure 到 MeasurePolicy：Android 自定义控件的两条路</title>
@@ -40,12 +32,20 @@
       <description><![CDATA[<p>不依赖 Bootloader 解锁的内核态提权</p>]]></description>
     </item>
     <item>
-      <title>从会话到常驻：DeepSeek Super-agent 架构拆解</title>
-      <link>https://draft.run/posts/super-agent-architecture</link>
-      <guid isPermaLink="true">https://draft.run/posts/super-agent-architecture</guid>
+      <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
+      <link>https://draft.run/posts/android-binder-ipc</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-binder-ipc</guid>
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
-      <category>Agent</category>
-      <description><![CDATA[<p>常驻 Agent 的模块划分与消息链路</p>]]></description>
+      <category>Android</category>
+      <description><![CDATA[<p>从 Java 调用到内核事务队列的完整链路</p>]]></description>
+    </item>
+    <item>
+      <title>从电源键到首帧：Android 系统启动流程</title>
+      <link>https://draft.run/posts/android-boot-flow</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-boot-flow</guid>
+      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>从 Boot ROM 到桌面首帧的六次交接</p>]]></description>
     </item>
     <item>
       <title>从图标到第一帧：Android 应用启动流程</title>
@@ -54,14 +54,6 @@
       <pubDate>Sun, 22 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
       <description><![CDATA[<p>冷启动的十四个阶段与对应的 trace</p>]]></description>
-    </item>
-    <item>
-      <title>把博客当成排版实验</title>
-      <link>https://draft.run/posts/typography-experiment</link>
-      <guid isPermaLink="true">https://draft.run/posts/typography-experiment</guid>
-      <pubDate>Sat, 21 Nov 2026 09:00:00 +0000</pubDate>
-      <category>排版</category>
-      <description><![CDATA[<p>这套排版的字、行、卡片与交互</p>]]></description>
     </item>
   </channel>
 </rss>

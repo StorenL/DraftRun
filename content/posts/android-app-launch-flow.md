@@ -3,6 +3,7 @@ title: 从图标到第一帧：Android 应用启动流程
 dek: 冷启动的十四个阶段与对应的 trace
 excerpt: 一次冷启动横跨 Launcher、system_server、Zygote 和应用进程，中间交接十几次。文中按真实顺序走一遍，每个交接点标出对应的类、日志和 trace，方便对照自己的现场。
 date: 2026-11-22
+time: 22:10
 minutes: 40
 tag: Android
 hot: true

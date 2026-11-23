@@ -371,20 +371,59 @@ def render_post(meta, body_html, toc):
     )
 
 
+INDEX_LIMIT = 6  # 首页最多显示几篇，其余进归档页
+
 SHOWMORE = '''<div class="showmore-wrap">
-              <button class="showmore" type="button">
-                Show more
+              <a class="showmore" href="/archive">
+                全部 {{TOTAL}} 篇
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M5 9l7 7 7-7" />
+                  <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
                 </svg>
-              </button>
+              </a>
             </div>'''
+
+
+def render_archive(posts):
+    """归档页：按月分组，只列日期、标题和分类，不放摘要。"""
+    tpl = (TEMPLATES / "archive.html").read_text(encoding="utf-8")
+
+    groups = []
+    current = None
+    for p in posts:
+        month = p["date"][:7]
+        if month != current:
+            current = month
+            groups.append((month, []))
+        groups[-1][1].append(p)
+
+    blocks = []
+    for month, items in groups:
+        year, mm = month.split("-")
+        rows = []
+        for p in items:
+            rows.append(
+                f'<li class="archive__row">'
+                f'<a href="/posts/{p["slug"]}">'
+                f'<time datetime="{p["date"]}">{p["date"][5:]}</time>'
+                f'<span class="archive__name">{html.escape(p["title"])}</span>'
+                f'<span class="archive__tag">{html.escape(p.get("tag", ""))}</span>'
+                f"</a></li>"
+            )
+        blocks.append(
+            f'<section class="archive__group">'
+            f'<h2 class="archive__month">{int(year)} 年 {int(mm)} 月'
+            f'<span class="archive__num">{len(items)}</span></h2>'
+            f'<ul class="archive__rows">' + "".join(rows) + "</ul></section>"
+        )
+
+    return (tpl.replace("{{COUNT}}", f"{len(posts)} 篇，按发布时间排列")
+               .replace("<!--ARCHIVE-->", "".join(blocks)))
 
 
 def render_index(posts):
     tpl = (TEMPLATES / "index.html").read_text(encoding="utf-8")
     items = []
-    for p in posts:
+    for p in posts[:INDEX_LIMIT]:
         item = f'''<article class="post-item">
               <h3><a href="/posts/{p["slug"]}">{html.escape(p["title"])}</a></h3>
               <p class="post-item__sub">{html.escape(p.get("dek", ""))}</p>
@@ -440,12 +479,16 @@ def render_index(posts):
             # 文章不足 6 篇时不显示 Show more
             # 首页目前渲染全部文章，Show more 没有可展开的内容，先不输出；
             # 等做出归档页再挂上去。
-            .replace("<!--SHOWMORE-->", ""))
+            .replace("<!--SHOWMORE-->", SHOWMORE.replace("{{TOTAL}}", str(len(posts))) if len(posts) > INDEX_LIMIT else ""))
 
 
 def render_sitemap(posts):
     urls = [f"  <url>\n    <loc>{SITE}/</loc>\n    <lastmod>{date.today()}</lastmod>\n"
             f"    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>"]
+    urls.append(
+        f"  <url>\n    <loc>{SITE}/archive</loc>\n    <lastmod>{date.today()}</lastmod>\n"
+        f"    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>"
+    )
     for p in posts:
         urls.append(
             f"  <url>\n    <loc>{SITE}/posts/{p['slug']}</loc>\n    <lastmod>{p['date']}</lastmod>\n"
@@ -461,7 +504,7 @@ def render_sitemap(posts):
 
 def render_rss(posts):
     items = []
-    for p in posts:
+    for p in posts[:INDEX_LIMIT]:
         pub = datetime.strptime(p["date"], "%Y-%m-%d").replace(
             hour=9, tzinfo=timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
         items.append(
@@ -501,7 +544,8 @@ def load_posts():
         meta["_path"] = path
         meta["_body"] = body
         posts.append(meta)
-    posts.sort(key=lambda p: p["date"], reverse=True)
+    # 日期只到天，同一天必须靠 time 分先后，否则会退化成按文件名排
+    posts.sort(key=lambda p: (p["date"], p.get("time", "00:00")), reverse=True)
     return posts
 
 
@@ -530,6 +574,9 @@ def validate(posts):
 
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", p.get("date", "")):
             problems.append(f"{name}: date 必须是 YYYY-MM-DD，现在是 {p.get('date')!r}")
+
+        if p.get("time") and not re.fullmatch(r"\d{2}:\d{2}", p["time"]):
+            problems.append(f"{name}: time 必须是 HH:MM，现在是 {p.get('time')!r}")
 
         if not p.get("minutes", "").isdigit():
             problems.append(f"{name}: minutes 必须是数字")
@@ -623,6 +670,8 @@ def main():
             (PUBLIC / f.name).write_bytes(f.read_bytes())
 
     (PUBLIC / "index.html").write_text(render_index(posts), encoding="utf-8", newline="\n")
+    (PUBLIC / "archive.html").write_text(render_archive(posts), encoding="utf-8", newline="\n")
+    print(f"  archive.html  （全部 {len(posts)} 篇）")
     (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8", newline="\n")
     print(f"  index.html / sitemap.xml / rss.xml  （共 {len(posts)} 篇）")
