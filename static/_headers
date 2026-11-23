@@ -4,11 +4,22 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
 
+# 页面必须每次校验，否则会和带哈希的静态资源错位
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
-/style.css
-  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+# 带内容哈希，可以放心长缓存；改了内容地址就变
+/style.css*
+  Cache-Control: public, max-age=31536000, immutable
+
+/search.js*
+  Cache-Control: public, max-age=31536000, immutable
+
+/search.json*
+  Cache-Control: public, max-age=31536000, immutable
+
+/search-body.json*
+  Cache-Control: public, max-age=31536000, immutable
 
 /favicon.svg
   Cache-Control: public, max-age=604800
@@ -16,3 +27,11 @@
 /rss.xml
   Content-Type: application/rss+xml; charset=utf-8
   Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+# 图片文件名带版本，同样可以长缓存
+/images/*
+  Cache-Control: public, max-age=31536000, immutable

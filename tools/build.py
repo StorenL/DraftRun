@@ -734,6 +734,37 @@ def new_post():
     print(f"已创建 {path}")
 
 
+def stamp_assets():
+    """给静态资源地址加上内容哈希，避免 HTML 更新了而 CSS/JS 还在缓存里。
+
+    不这么做的话，每次改了样式再发布，老访客会拿到「新 HTML + 旧 CSS」，
+    页面结构在但样式不生效。
+    """
+    versions = {}
+    for name in ("style.css", "search.js"):
+        f = STATIC / name
+        if f.exists():
+            versions[name] = hashlib.md5(f.read_bytes()).hexdigest()[:8]
+
+    for page in PUBLIC.rglob("*.html"):
+        text = page.read_text(encoding="utf-8")
+        original = text
+        for name, ver in versions.items():
+            text = text.replace(f'"/{name}"', f'"/{name}?v={ver}"')
+        if text != original:
+            page.write_text(text, encoding="utf-8", newline="\n")
+
+    # 搜索索引同理：内容一变，URL 就要变
+    js = (PUBLIC / "search.js").read_text(encoding="utf-8")
+    for name in ("search.json", "search-body.json"):
+        f = PUBLIC / name
+        if f.exists():
+            ver = hashlib.md5(f.read_bytes()).hexdigest()[:8]
+            js = js.replace(f'"/{name}"', f'"/{name}?v={ver}"')
+    (PUBLIC / "search.js").write_text(js, encoding="utf-8", newline="\n")
+
+    print(f"  资源版本：{'、'.join(f'{k}->{v}' for k, v in versions.items())}")
+
 def main():
     if "--new" in sys.argv:
         new_post()
@@ -789,6 +820,9 @@ def main():
     (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8", newline="\n")
     print(f"  index.html / sitemap.xml / rss.xml  （共 {len(posts)} 篇）")
+
+    # 最后一步：给 style.css / search.js / 搜索索引加内容哈希
+    stamp_assets()
 
 
 if __name__ == "__main__":
