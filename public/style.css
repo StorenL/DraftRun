@@ -1792,26 +1792,8 @@ html.is-swapping .promo {
   font-size: 15px;
   color: var(--muted);
 }
-.archive__group + .archive__group {
-  margin-top: 52px;
-}
-.archive__month {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0 0 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-.archive__num {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--faint);
-}
+
+
 .archive__rows {
   margin: 0;
   padding: 0;
@@ -1819,10 +1801,10 @@ html.is-swapping .promo {
 }
 .archive__row a {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 20px;
-  padding: 14px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
@@ -1830,12 +1812,7 @@ html.is-swapping .promo {
 .archive__row:last-child a {
   border-bottom: 0;
 }
-.archive__row time {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
-}
+
 .archive__name {
   font-size: 19px;
   font-weight: 500;
@@ -1862,8 +1839,8 @@ html.is-swapping .promo {
     font-size: 30px;
   }
   .archive__row a {
-    grid-template-columns: 52px minmax(0, 1fr);
-    gap: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
   .archive__tag {
     display: none;

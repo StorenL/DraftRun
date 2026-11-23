@@ -350,12 +350,11 @@ def render_post(meta, body_html, toc):
     dek = meta.get("dek", "")
     url = f"{SITE}/posts/{slug}"
     toc_html = "".join(f'<li><a href="#{a}">{html.escape(t)}</a></li>' for a, t in toc)
+    # 日期暂时不上页面：有的文章是早先写的、近期改的，露出"首发于"会误导
     meta_line = (
-        f'<span>首发于 <a href="/">{cn_date(meta["date"])}</a></span>\n'
+        f'<span>{html.escape(meta.get("tag", "笔记"))}</span>\n'
         '          <span class="sep">·</span>\n'
-        f'          <span>约 {meta.get("minutes", "5")} 分钟</span>\n'
-        '          <span class="sep">·</span>\n'
-        f'          <a href="/#writing">{html.escape(meta.get("tag", "笔记"))}</a>'
+        f'          <span>约 {meta.get("minutes", "5")} 分钟</span>'
     )
     return (
         tpl.replace("{{TITLE}}", html.escape(title))
@@ -384,41 +383,23 @@ SHOWMORE = '''<div class="showmore-wrap">
 
 
 def render_archive(posts):
-    """归档页：按月分组，只列日期、标题和分类，不放摘要。"""
+    """归档页：扁平列表，只列标题和分类。
+
+    不显示日期——排序用的是 date + time，但页面上一律不露出，
+    避免"最近改过"的文章看起来像是刚写的。
+    """
     tpl = (TEMPLATES / "archive.html").read_text(encoding="utf-8")
-
-    groups = []
-    current = None
+    rows = []
     for p in posts:
-        month = p["date"][:7]
-        if month != current:
-            current = month
-            groups.append((month, []))
-        groups[-1][1].append(p)
-
-    blocks = []
-    for month, items in groups:
-        year, mm = month.split("-")
-        rows = []
-        for p in items:
-            rows.append(
-                f'<li class="archive__row">'
-                f'<a href="/posts/{p["slug"]}">'
-                f'<time datetime="{p["date"]}">{p["date"][5:]}</time>'
-                f'<span class="archive__name">{html.escape(p["title"])}</span>'
-                f'<span class="archive__tag">{html.escape(p.get("tag", ""))}</span>'
-                f"</a></li>"
-            )
-        blocks.append(
-            f'<section class="archive__group">'
-            f'<h2 class="archive__month">{int(year)} 年 {int(mm)} 月'
-            f'<span class="archive__num">{len(items)}</span></h2>'
-            f'<ul class="archive__rows">' + "".join(rows) + "</ul></section>"
+        rows.append(
+            f'<li class="archive__row">'
+            f'<a href="/posts/{p["slug"]}">'
+            f'<span class="archive__name">{html.escape(p["title"])}</span>'
+            f'<span class="archive__tag">{html.escape(p.get("tag", ""))}</span>'
+            f"</a></li>"
         )
-
-    return (tpl.replace("{{COUNT}}", f"{len(posts)} 篇，按发布时间排列")
-               .replace("<!--ARCHIVE-->", "".join(blocks)))
-
+    return (tpl.replace("{{COUNT}}", f"共 {len(posts)} 篇")
+               .replace("<!--ARCHIVE-->", '<ul class="archive__rows">' + "".join(rows) + "</ul>"))
 
 def render_index(posts):
     tpl = (TEMPLATES / "index.html").read_text(encoding="utf-8")
