@@ -59,7 +59,6 @@
     root.hidden = true;
     root.classList.remove("is-actual");
     document.documentElement.classList.remove("is-lightboxed");
-    img.removeAttribute("src");
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 

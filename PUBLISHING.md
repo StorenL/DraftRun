@@ -89,6 +89,7 @@ git add -A && git commit -m "post: 标题" && git push
 | 手机端目录在底部 | 900px 断点没生效 | 检查 `.post-layout` 在窄屏是否 `display:flex` + `align-items:stretch` |
 | 右侧目录空白 | 模板里 `{{TOC}}` 丢了 | 查 `templates/post.html` |
 | 打开搜索/弹窗时页面横向跳一下 | 锁滚动让滚动条消失，居中内容右移半个滚动条宽 | `html.is-searching` 里加 `scrollbar-gutter: stable` |
+| 弹窗关了但蒙层还在 | 作者样式写了 `display`，覆盖了 `[hidden]` 的默认 `display:none` | 加 `.xxx[hidden] { display: none }` |
 
 ---
 
@@ -186,7 +187,29 @@ TAG_SLUGS = {"排版": "typography", "笔记": "notes"}
 
 发布后如果自己看到页面错乱，先确认是不是旧页面没刷新——刷新一次就会拿到新地址。
 
-## 七、改版时的额外注意
+## 七、弹窗的两个必查项
+
+写任何基于 `hidden` 属性的浮层（搜索、图片放大、菜单），验完这两条再提交：
+
+**① `[hidden]` 必须真的生效。** 浏览器默认 `[hidden] { display: none }`，但只要你在自己的规则里写了 `display: flex/block/grid`，就会把它盖掉——属性变成 `true`，界面却没消失。必须补一条：
+
+```css
+.lightbox[hidden] { display: none; }
+```
+
+**② 验证要看计算样式，不是 `.hidden` 属性。**
+
+```js
+// 错的：属性是 true，界面可能还在
+el.hidden
+
+// 对的
+getComputedStyle(el).display === "none"
+```
+
+这一条踩过：`el.hidden === true` 让测试通过，但线上蒙层纹丝不动。
+
+## 八、改版时的额外注意
 
 动 CSS 或模板之后，除了上面这些，还要确认：
 

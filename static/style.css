@@ -1903,6 +1903,9 @@ html.is-searching {
   inset: 0;
   z-index: 200;
 }
+.search[hidden] {
+  display: none;
+}
 .search__backdrop {
   position: absolute;
   inset: 0;
@@ -2041,6 +2044,11 @@ html.is-lightboxed {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* 有 display 的元素，[hidden] 的浏览器默认样式会被作者样式覆盖，
+   必须显式关掉，否则 hidden = true 只是属性变了、界面没变 */
+.lightbox[hidden] {
+  display: none;
 }
 .lightbox__backdrop {
   position: absolute;
