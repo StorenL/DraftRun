@@ -741,7 +741,7 @@ def stamp_assets():
     页面结构在但样式不生效。
     """
     versions = {}
-    for name in ("style.css", "search.js"):
+    for name in ("style.css", "search.js", "lightbox.js"):
         f = STATIC / name
         if f.exists():
             versions[name] = hashlib.md5(f.read_bytes()).hexdigest()[:8]
@@ -815,7 +815,13 @@ def main():
     (PUBLIC / "search.json").write_text(render_search_index(posts), encoding="utf-8", newline="\n")
     body_index = render_body_index(posts)
     (PUBLIC / "search-body.json").write_text(body_index, encoding="utf-8", newline="\n")
-    print(f"  search.json + search-body.json （{len(body_index.encode('utf-8')) // 1024}KB 正文索引）")
+    body_kb = len(body_index.encode("utf-8")) // 1024
+    print(f"  search.json + search-body.json （{body_kb}KB 正文索引）")
+    # 提醒阈值：见 PUBLISHING.md「搜索的性能底线」
+    if body_kb >= 900:
+        print(f"  ! 正文索引 {body_kb}KB 已超过 900KB，该考虑分片了（见 PUBLISHING.md）")
+    elif body_kb >= 600:
+        print(f"  · 正文索引 {body_kb}KB，接近 900KB 提醒线")
     print(f"  archive.html  （全部 {len(posts)} 篇）")
     (PUBLIC / "sitemap.xml").write_text(render_sitemap(posts), encoding="utf-8", newline="\n")
     (PUBLIC / "rss.xml").write_text(render_rss(posts), encoding="utf-8", newline="\n")

@@ -30,7 +30,7 @@
     <meta property="og:url" content="https://draft.run/" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
-    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=e1cab96e" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=00f3ff2a" />
   </head>
 
   <body>
@@ -118,7 +118,7 @@
               <p>
                 大多会是 Android，偶尔也写点别的。希望它能见证自己的成长。 🌱
               </p>
-              <a class="promo__btn" href="/posts/super-agent-architecture">
+              <a class="promo__btn" href="/posts/android-anr-analysis">
                 最近一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -185,6 +185,20 @@
           <div id="writing">
             <h2 class="label">Articles and tutorials</h2>
 
+            <article class="post-item">
+              <h3><a href="/posts/android-anr-analysis">五秒、十秒、二十秒：Android ANR 的触发原理与分析流程</a></h3>
+              <p class="post-item__sub">五类超时、一条证据链</p>
+              <p class="post-item__excerpt">结账页点了提交没反应，几秒后弹出「应用没有响应」。ANR 的超时阈值分五类，每一类记在同一个地方、判据却不同。文中把触发条件、trace 结构、主线程状态和排查顺序连成一条链。</p>
+              <a class="readmore" href="/posts/android-anr-analysis">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
             <article class="post-item">
               <h3><a href="/posts/super-agent-architecture">从会话到常驻：DeepSeek Super-agent 架构拆解</a></h3>
               <p class="post-item__sub">常驻 Agent 的模块划分与消息链路</p>
@@ -255,23 +269,9 @@
                 </span>
               </a>
             </article>
-            <article class="post-item">
-              <h3><a href="/posts/android-app-launch-flow">从图标到第一帧：Android 应用启动流程</a></h3>
-              <p class="post-item__sub">冷启动的十四个阶段与对应的 trace</p>
-              <p class="post-item__excerpt">一次冷启动横跨 Launcher、system_server、Zygote 和应用进程，中间交接十几次。文中按真实顺序走一遍，每个交接点标出对应的类、日志和 trace，方便对照自己的现场。</p>
-              <a class="readmore" href="/posts/android-app-launch-flow">
-                Read more
-                <span class="trail" aria-hidden="true">
-                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                </span>
-              </a>
-            </article>
             <div class="showmore-wrap">
               <a class="showmore" href="/archive">
-                全部 7 篇
+                全部 8 篇
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
                 </svg>
@@ -290,6 +290,12 @@
             <section>
               <h2 class="label">Popular content</h2>
               <ul class="popular"><li>
+                  <a href="/posts/android-anr-analysis">
+                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
+                    <span>五秒、十秒、二十秒：Android ANR 的触发原理与分析流程</span>
+                  </a>
+                </li>
+                <li>
                   <a href="/posts/super-agent-architecture">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>从会话到常驻：DeepSeek Super-agent 架构拆解</span>
@@ -311,12 +317,6 @@
                   <a href="/posts/android-binder-ipc">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>一次跨进程调用有多远：Android Binder 进程通信机制</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/posts/android-boot-flow">
-                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
-                    <span>从电源键到首帧：Android 系统启动流程</span>
                   </a>
                 </li></ul>
             </section>

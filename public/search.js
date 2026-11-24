@@ -67,7 +67,7 @@
 
   function load() {
     if (data || loading) return;
-    loading = fetch("/search.json?v=40e507cc")
+    loading = fetch("/search.json?v=a04b8190")
       .then(function (r) { return r.json(); })
       .then(function (rows) {
         data = rows;
@@ -83,7 +83,7 @@
   // 正文索引大（约 400KB），不阻塞首屏：先出元信息结果，到了再补一版
   function loadBody() {
     if (body) return;
-    fetch("/search-body.json?v=c295b70a")
+    fetch("/search-body.json?v=216bcc53")
       .then(function (r) { return r.json(); })
       .then(function (rows) {
         body = rows;

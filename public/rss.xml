@@ -5,8 +5,16 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Mon, 23 Nov 2026 13:21:46 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 24 Nov 2026 00:52:48 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>五秒、十秒、二十秒：Android ANR 的触发原理与分析流程</title>
+      <link>https://draft.run/posts/android-anr-analysis</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-anr-analysis</guid>
+      <pubDate>Tue, 24 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>五类超时、一条证据链</p>]]></description>
+    </item>
     <item>
       <title>从会话到常驻：DeepSeek Super-agent 架构拆解</title>
       <link>https://draft.run/posts/super-agent-architecture</link>
@@ -46,14 +54,6 @@
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
       <description><![CDATA[<p>从 Boot ROM 到桌面首帧的六次交接</p>]]></description>
-    </item>
-    <item>
-      <title>从图标到第一帧：Android 应用启动流程</title>
-      <link>https://draft.run/posts/android-app-launch-flow</link>
-      <guid isPermaLink="true">https://draft.run/posts/android-app-launch-flow</guid>
-      <pubDate>Sun, 22 Nov 2026 09:00:00 +0000</pubDate>
-      <category>Android</category>
-      <description><![CDATA[<p>冷启动的十四个阶段与对应的 trace</p>]]></description>
     </item>
   </channel>
 </rss>
