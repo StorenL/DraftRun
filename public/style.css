@@ -1703,6 +1703,22 @@ a {
   color: var(--link);
 }
 
+/* 1080p 以下笔记本：目录还留得住，但要让出宽度给正文，
+   否则正文会被挤到 33 字/行（阅读下限是 36 字） */
+@media (max-width: 1120px) and (min-width: 901px) {
+  .post-layout {
+    grid-template-columns: minmax(0, 1fr) 200px;
+    gap: 48px;
+  }
+  .post-main {
+    max-width: 780px;
+  }
+  .post-aside .toc a {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+}
+
 /* 窄屏：目录收到正文上方，恢复成胶囊 */
 @media (max-width: 900px) {
   /* 窄屏：目录挪到正文上方（用 order，不改 DOM 顺序） */
