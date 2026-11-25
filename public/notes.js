@@ -488,8 +488,16 @@
   }
 
   function boot() {
-    if (/[?&]notes(=|&|$)/.test(location.search) && !isAuthor()) {
-      if (promptToken()) location.replace(location.pathname);
+    // ?notes=<令牌> 直接写入，?notes=1 则弹框询问
+    var entry = location.search.match(/[?&]notes(?:=([^&]*))?/);
+    if (entry && !isAuthor()) {
+      var value = decodeURIComponent(entry[1] || "");
+      var ok = value && value !== "1" ? (localStorage.setItem(TOKEN_KEY, value), true) : promptToken();
+      if (ok) {
+        // 令牌不留在地址栏里
+        history.replaceState(null, "", location.pathname);
+        location.reload();
+      }
       return;
     }
 
