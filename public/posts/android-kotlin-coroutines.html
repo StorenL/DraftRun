@@ -1,0 +1,1409 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>让出去，再回来：在 Android 开发里用好 Kotlin 协程 · 潦草地</title>
+    <meta name="description" content="挂起、作用域与取消的边界" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("lc-theme");
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="canonical" href="https://draft.run/posts/android-kotlin-coroutines" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="潦草地" />
+    <meta property="og:title" content="让出去，再回来：在 Android 开发里用好 Kotlin 协程" />
+    <meta property="og:description" content="挂起、作用域与取消的边界" />
+    <meta property="og:url" content="https://draft.run/posts/android-kotlin-coroutines" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=f0912034" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <header class="header" data-header>
+      <div class="shell">
+        <a class="brand" href="/" aria-label="潦草地">
+          潦草地
+          <svg class="brand__scratch" viewBox="0 0 90 10" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M2 6q11-5 22 0t22 0t22 0t20 0"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+            />
+          </svg>
+        </a>
+
+        <nav class="nav" aria-label="主导航">
+          <a href="/">文章</a>
+          <a href="/#categories">分类</a>
+          <a href="/#about">关于</a>
+        </nav>
+
+        <div class="header__tools">
+          <button class="icon-btn" type="button" aria-label="搜索" data-search>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m19.5 19.5-4-4" />
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" data-theme-toggle aria-label="切换到暗色">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" />
+            </svg>
+          </button>
+          <a class="icon-btn" href="/rss.xml" aria-label="RSS">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1.6" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <div class="wrap post-head">
+        <p class="post-kicker">Android</p>
+        <h1 class="post-title">让出去，再回来：在 Android 开发里用好 Kotlin 协程</h1>
+        <p class="post-dek">挂起、作用域与取消的边界</p>
+        <p class="post-meta">
+          <span>Android</span>
+          <span class="sep">·</span>
+          <span>约 55 分钟</span>
+        </p>
+        <hr class="rule" />
+      </div>
+
+      <div class="wrap post-layout">
+        <div class="post-main">
+          <article class="prose">
+            <figure class="prose-figure"><img src="/images/android-kotlin-coroutines/00-cover.webp" alt="封面：让出去，再回来" loading="lazy" /></figure>
+
+<p>订单详情页上线一周，收到了三条反馈。</p>
+
+<p>第一条来自线上崩溃：弱网下用户打开订单详情，没等加载完就退出了，几秒钟后请求返回，应用闪退。第二条来自测试：连点两次刷新，页面先显示出新数据，一眨眼又变回了旧数据。第三条来自产品：转一下屏幕，加载动画又转了一圈，网络请求重新发了一遍。</p>
+
+<p>这个页面当时的写法很典型：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">private</span> <span class="tok-kw">var</span> requestSeq = <span class="tok-num">0</span></span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">private</span> <span class="tok-kw">fun</span> <span class="tok-fn">refresh</span>() {</span>
+<span class="line">    <span class="tok-kw">val</span> seq = ++requestSeq</span>
+<span class="line">    Thread {</span>
+<span class="line">        <span class="tok-kw">val</span> order = OrderApi<span class="tok-prop">.fetch</span>(orderId)          <span class="tok-com">// 同步的网络请求</span></span>
+<span class="line">        runOnUiThread {</span>
+<span class="line">            <span class="tok-kw">if</span> (seq == requestSeq) <span class="tok-fn">render</span>(order)      <span class="tok-com">// 只渲染最后一次请求的结果</span></span>
+<span class="line">        }</span>
+<span class="line">    }<span class="tok-prop">.start</span>()</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>为了不让旧结果盖掉新结果，已经有了请求编号。为了不去更新一个已经销毁的界面，还得再加一个 <code>isFinishing</code> 的判断。转屏之后重新请求的问题，则要再找一个地方把结果存下来。每一条反馈对应一处补丁，补丁之间互不相干。</p>
+
+<p>换成协程之后，这三个问题用的是同一套机制。等待结果的时候，协程把线程让出去，所以界面不卡。协程属于一个作用域，作用域跟着界面或者 ViewModel 的生命周期取消，所以界面销毁之后它自己会停，网络请求也跟着取消。新旧两次加载之间只差一个取消，旧的停下来，新的才开始，先后顺序错不了。</p>
+
+<p>下面按四个问题展开：在哪个作用域里启动，在哪个线程上跑，什么时候取消，出错往哪走。回答完这四个，再说结果怎么交给界面，数据层和后台任务怎么写，怎么测试和排错。例子从头到尾都围着这一个订单详情页。</p>
+
+<h2 id="1">
+              1. 挂起：让出的是线程
+              <a class="anchor" href="#1">链接到此标题</a>
+            </h2>
+
+<p><code>suspend</code> 修饰的函数叫挂起函数。它和普通函数的区别只有一条：它可以在执行到一半的时候停下，把所在的线程让出去，等条件满足了再从停下的地方继续。停下的那一刻叫挂起点，继续的那一刻叫恢复。</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/01-suspend.webp" alt="挂起：让出的是线程，不是代码的先后顺序" loading="lazy" /></figure>
+
+<p>图里上下两条时间线做的是同一件事：发请求，等结果，更新界面。上面一条在等结果的时候把主线程卡住，这段时间里产生的绘制和点击只能排队。下面一条在等结果的时候挂起，主线程回到消息循环去处理绘制和点击，结果回来之后再恢复。</p>
+
+<p>这里最容易误会的一点是：挂起让出的是线程，代码的先后顺序一点没变。先发请求，拿到结果，再更新界面，写法和读法都是顺序的。变的只是等待的那段时间里，线程去干了别的活。</p>
+
+<p>能让出线程的只有挂起函数。<code>delay</code>、<code>withContext</code>、Room 的 suspend 查询、Retrofit 的 suspend 接口，以及所有调用了它们的函数。<code>Thread.sleep</code>、阻塞的 IO、一段耗时的计算都不是挂起函数，它们在哪个线程上跑，哪个线程就被占住，外面有没有包着协程都一样。</p>
+
+<p>所以 <code>suspend</code> 这个关键字本身不切线程。下面这个函数照样带着 <code>suspend</code>，照样会把调用它的线程卡住：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">readDraft</span>(file: File): String = file<span class="tok-prop">.readText</span>()</span></code></pre>
+            </div>
+
+<p>在主线程上调用它，主线程就卡在读文件这一行上。想让它不卡界面，得自己把这一行挪到别的线程，第 3 节讲怎么做。</p>
+
+<p>挂起函数只能在协程里调用，或者被另一个挂起函数调用，这一点由编译器检查。普通的函数里要发起一次挂起调用，得先有一个协程，通常是在一个作用域上 <code>launch</code>：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">binding<span class="tok-prop">.preview</span><span class="tok-prop">.setOnClickListener</span> {</span>
+<span class="line">    lifecycleScope<span class="tok-prop">.launch</span> {                     <span class="tok-com">// 从这里开始才是在协程里</span></span>
+<span class="line">        <span class="tok-kw">val</span> draft = repository<span class="tok-prop">.loadDraft</span>(orderId)   <span class="tok-com">// 挂起函数，主线程在这一行让出去</span></span>
+<span class="line">        binding<span class="tok-prop">.preview</span><span class="tok-prop">.text</span> = draft                <span class="tok-com">// 恢复之后才执行到这一行</span></span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>这个协程跑在主线程上。<code>loadDraft</code> 返回之前，点击回调早就执行完了，协程停在 <code>loadDraft</code> 这一行上等结果，主线程回去处理别的消息。结果回来，协程恢复，才执行给 <code>preview</code> 赋值的那一行。</p>
+
+<p>还有一点要记住：挂起前后，协程可能已经换了一条线程。不要假设挂起点两边是同一个线程，也不要指望 <code>ThreadLocal</code> 在挂起点之后还保持原来的值。</p>
+
+<p>实现上，编译器会把每个挂起函数改写成一个状态机。每遇到一个挂起点，它记下当前的编号，再把一个叫 continuation 的对象交出去。恢复的时候用这个对象把函数再调用一次，它从记下的编号接着往下走。写业务代码不需要碰 continuation，不过知道有这么个东西，后面很多行为的来由会清楚很多：取消的检查发生在挂起点，异常顺着它往回传，恢复之后落在哪条线程上由调度器决定。</p>
+
+<h2 id="2">
+              2. 启动：作用域、构造器、调度器
+              <a class="anchor" href="#2">链接到此标题</a>
+            </h2>
+
+<p>协程必须在一个作用域里启动。<code>CoroutineScope</code> 本身不执行任何东西，它只是一个装着 <code>CoroutineContext</code> 的容器，作用是记账：在这个作用域里启动的协程都记在它名下，作用域取消的时候一并取消。上下文里最常用的是两个元素，<code>Job</code> 表达父子关系，<code>CoroutineDispatcher</code> 决定在哪条线程上跑。新启动的协程会拿到一个新的 <code>Job</code>，其余的元素从作用域继承。</p>
+
+<h3 id="2-1">2.1 在哪个作用域里启动</h3>
+
+<p>Android 把常用的作用域都准备好了，按“这段工作属于谁”来选：</p>
+
+<div class="table-wrap"><table><caption>Android 上常用的作用域</caption><thead><tr><th>属于谁</th><th>用哪个作用域</th><th>什么时候取消</th></tr></thead><tbody><tr><td>当前界面</td><td><code>lifecycleScope</code></td><td>界面销毁时。加载、动画、监听都算</td></tr><tr><td>转屏后还要用的数据</td><td><code>viewModelScope</code></td><td>ViewModel 被清除时</td></tr><tr><td>Compose 的回调</td><td><code>rememberCoroutineScope</code></td><td>离开组合时。点击这类一次性回调用它</td></tr><tr><td>Compose 里跟着值的工作</td><td><code>LaunchedEffect</code></td><td>值变化，或离开组合时</td></tr><tr><td>必须做完的事</td><td>WorkManager</td><td>被系统叫停，或超过时限。比如上传、同步</td></tr><tr><td>应用级的长期任务</td><td>自己创建的作用域</td><td>应用退出时</td></tr></tbody></table></div>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/02-scopes.webp" alt="作用域跟着谁走，协程就活到什么时候" loading="lazy" /></figure>
+
+<p><code>lifecycleScope</code> 和 <code>viewModelScope</code> 的上下文都是 <code>SupervisorJob() + Dispatchers.Main.immediate</code>。前者让各个子协程互不影响，第 5 节会讲。后者让协程默认在主线程上跑，并且从主线程上调用时不用再多 post 一次。</p>
+
+<p><code>GlobalScope</code> 不要用。官方给了三条理由：它让你不得不硬编码各种参数，它让测试变得很困难，它没有一个统一的上下文。落到实际后果上，就是在它里面启动的协程跟任何生命周期都没有关系，界面早就没了它还在跑。</p>
+
+<p>需要比界面活得久的工作，放 ViewModel 里。需要比 ViewModel 活得久的工作，交给 WorkManager。确实需要应用级的，自己创建一个，在 Application 里持有，再通过构造函数注入给用到它的类，测试的时候才换得掉：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> ShopApplication : <span class="tok-fn">Application</span>() {</span>
+<span class="line">    <span class="tok-com">// 应用级的协程都记在这里，不随任何一个界面取消</span></span>
+<span class="line">    <span class="tok-kw">val</span> applicationScope = <span class="tok-fn">CoroutineScope</span>(<span class="tok-fn">SupervisorJob</span>() + Dispatchers<span class="tok-prop">.Default</span>)</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>这里用 <code>SupervisorJob</code>，是因为里面启动的任务彼此不该连坐，一个失败不应该把整个应用级作用域取消掉。用 <code>Default</code> 而不用 <code>Main</code>，是因为这里启动的通常是后台任务，也没有界面可更新。</p>
+
+<p>Compose 里的两个要分清。<code>rememberCoroutineScope()</code> 返回的作用域绑定在组合里的这个位置，离开组合时取消，适合在点击这类回调里启动一次性的工作。<code>LaunchedEffect</code> 在进入组合时启动，key 变了就取消再重启，离开组合时取消。官方文档专门提醒，不要在组合过程本身往任何作用域里启动协程，因为组合会反复执行。</p>
+
+<p>Fragment 里要多想一步。和视图绑定的工作，用 <code>viewLifecycleOwner.lifecycleScope</code>。它的生命周期跟着 Fragment 的视图走，视图销毁了协程就取消。用 Fragment 自己的 <code>lifecycleScope</code> 的话，视图没了协程还在。</p>
+
+<p>还有一个分工上的建议，同样来自官方的最佳实践：业务上的协程由 ViewModel 启动，界面层只调用 ViewModel 的普通方法。界面层自己启动的协程只做和界面有关的事，比如一段动画。这样转屏的时候工作不会被取消，启动点也不会散落在各个界面里。</p>
+
+<h3 id="2-2">2.2 用哪个构造器</h3>
+
+<div class="table-wrap"><table><caption>四个常用的协程构造器</caption><thead><tr><th>写法</th><th>得到什么</th><th>要不要等它结束</th><th>用来做什么</th></tr></thead><tbody><tr><td><code>launch</code></td><td>一个 <code>Job</code></td><td>不等</td><td>发起一件事，结果通过状态交回</td></tr><tr><td><code>async</code></td><td>一个 <code>Deferred</code></td><td>不等</td><td>并发的几路任务，之后再取结果</td></tr><tr><td><code>withContext</code></td><td>块的返回值</td><td>等</td><td>换一个调度器或上下文执行一段代码</td></tr><tr><td><code>coroutineScope</code></td><td>块的返回值</td><td>等</td><td>在挂起函数里并发启动几个子协程</td></tr></tbody></table></div>
+
+<p><code>launch</code> 默认只是把协程安排到调度器上，不保证马上执行，也可能还没开始就被取消。Android 的两个作用域用的是 <code>Main.immediate</code>，从主线程上调用时，第一个挂起点之前的代码是同步执行的，不用再等下一轮消息循环。<code>async</code> 的取消规则和 <code>launch</code> 相同，差别在异常怎么处理，放到第 5 节。</p>
+
+<p><code>launch</code> 和 <code>async</code> 的第一个参数是上下文。可以传另一个调度器，可以传 <code>CoroutineName</code> 这样的元素，它们会和作用域的上下文合并，作用域里没有的加上，有的被覆盖。唯一不要往里放的是 <code>Job</code>。放了它，新协程的父级就变成了这个 <code>Job</code>，而不是启动它的作用域，父子关系到这里就断了。协程库的文档把这种写法明确列为错误，只是为了兼容旧代码才没有禁止。</p>
+
+<p>表里后两个都带一个作用域，体现的是结构化并发：在它们里面启动的子协程，全都记在这次调用的名下，这次调用要等所有子协程结束才返回。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">loadAll</span>(orderIds: List&lt;String&gt;): List&lt;Order&gt; = coroutineScope {</span>
+<span class="line">    orderIds<span class="tok-prop">.map</span> { id -&gt; async { repository<span class="tok-prop">.loadOrder</span>(id) } }<span class="tok-prop">.awaitAll</span>()</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>这样做的好处是，<code>loadAll</code> 返回的时候，不会有它启动的协程还在后台跑着。任何一个子协程失败，其余的会被取消，异常抛给 <code>loadAll</code> 的调用方。启动协程的时候要守住这种父子关系，一旦把它启动到一个和当前调用没有关系的地方，这份等待和这份取消就都没有了。</p>
+
+<h3 id="2-3">2.3 在哪条线程上跑</h3>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/03-dispatchers.webp" alt="四个常用调度器：代码分别在哪条线程上跑" loading="lazy" /></figure>
+
+<div class="table-wrap"><table><caption>四个常用调度器</caption><thead><tr><th>调度器</th><th>放什么</th><th>线程</th></tr></thead><tbody><tr><td><code>Main</code></td><td>更新界面，读写只属于界面的状态</td><td>主线程，一条</td></tr><tr><td><code>Main.immediate</code></td><td>同上，已经在主线程上时不再 post</td><td>主线程，一条</td></tr><tr><td><code>IO</code></td><td>阻塞的文件、网络、数据库操作</td><td>上限默认取 64 和核数里较大的那个</td></tr><tr><td><code>Default</code></td><td>CPU 密集：解析、排序、解码</td><td>上限等于核数，至少两个</td></tr></tbody></table></div>
+
+<p>调度器是从作用域继承来的。<code>viewModelScope.launch { }</code> 里的代码跑在主线程上，要换线程就用 <code>withContext</code> 临时切一下，第 3 节讲。<code>IO</code> 和 <code>Default</code> 共用同一个线程池，线程名都是 <code>DefaultDispatcher-worker-N</code>，所以在 <code>Default</code> 上切到 <code>IO</code>，通常并不会真的换一条线程。两者的区别在并行上限。<code>IO</code> 允许更多线程同时等着，<code>Default</code> 的线程数不超过核数。把阻塞 IO 放进 <code>Default</code>，等于让少数几条线程去干等，排在后面的计算任务只能跟着等。</p>
+
+<p><code>Main</code> 和 <code>Main.immediate</code> 的差别只有一处：已经在主线程上的时候怎么办。用 <code>Main</code>，每次恢复都要往主线程的消息队列里 post 一次，哪怕当前就站在主线程上。用 <code>Main.immediate</code>，当前在主线程上就直接执行。AndroidX 的两个作用域默认用的是后者，所以在 <code>onCreate</code> 里写 <code>viewModelScope.launch { }</code>，<code>launch</code> 返回的时候第一个挂起点之前的代码已经跑完了，紧接着读状态，读到的是更新以后的值。</p>
+
+<p>不要把 <code>Dispatchers</code> 写死在类里。官方最佳实践的第一条就是注入调度器：把它做成构造函数的参数，默认值是 <code>Dispatchers.IO</code>，测试的时候换成一个测试调度器：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> <span class="tok-fn">OrderRepository</span>(</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> api: OrderApi,</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> dao: OrderDao,</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> ioDispatcher: CoroutineDispatcher = Dispatchers<span class="tok-prop">.IO</span>,</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> defaultDispatcher: CoroutineDispatcher = Dispatchers<span class="tok-prop">.Default</span>,</span>
+<span class="line">)</span></code></pre>
+            </div>
+
+<h2 id="3">
+              3. 主线程安全：切线程的事写在数据层
+              <a class="anchor" href="#3">链接到此标题</a>
+            </h2>
+
+<p>官方文档给 main-safe 下的定义很短：这个函数不会阻塞主线程上的界面更新。落到写法上是一条规则：数据层里的每个挂起函数，自己负责把自己切到合适的线程上，调用方不需要知道它内部用了哪个调度器。</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/04-with-context.webp" alt="withContext：切线程的事写在数据层，调用方只看到一次挂起" loading="lazy" /></figure>
+
+<p>图里调用方在主线程上调用 <code>loadReceipt</code>，中间的线程切换全部发生在 Repository 内部。对 ViewModel 来说，这次调用只是一次普通的挂起：线程让出去，结果回来，接着往下走。</p>
+
+<h3 id="3-1-withcontext">3.1 withContext：让挂起函数自己切线程</h3>
+
+<p>做法是把阻塞的那一段代码用 <code>withContext</code> 包起来：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> <span class="tok-fn">OrderRepository</span>(</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> api: OrderApi,</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> dao: OrderDao,</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> ioDispatcher: CoroutineDispatcher = Dispatchers<span class="tok-prop">.IO</span>,</span>
+<span class="line">) {</span>
+<span class="line">    <span class="tok-com">// 在主线程上调用它也没有问题</span></span>
+<span class="line">    <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">loadReceipt</span>(orderId: String): Receipt = <span class="tok-fn">withContext</span>(ioDispatcher) {</span>
+<span class="line">        <span class="tok-kw">val</span> cached = <span class="tok-fn">receiptFile</span>(orderId)</span>
+<span class="line">        <span class="tok-kw">if</span> (cached<span class="tok-prop">.exists</span>()) {</span>
+<span class="line">            Json<span class="tok-prop">.decodeFromString</span>(cached<span class="tok-prop">.readText</span>())     <span class="tok-com">// 阻塞的文件读取和解析</span></span>
+<span class="line">        } <span class="tok-kw">else</span> {</span>
+<span class="line">            <span class="tok-kw">val</span> receipt = api<span class="tok-prop">.getReceipt</span>(orderId)        <span class="tok-com">// suspend 接口，本身就不占主线程</span></span>
+<span class="line">            cached<span class="tok-prop">.writeText</span>(Json<span class="tok-prop">.encodeToString</span>(receipt))</span>
+<span class="line">            receipt</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>这个函数里混着两类调用。<code>readText</code> 和 <code>writeText</code> 是普通的阻塞调用，所以整个块要放进 <code>withContext(ioDispatcher)</code>。<code>api.getReceipt</code> 是 Retrofit 的 suspend 接口，它自己就不占主线程，放在 <code>withContext</code> 里只是为了和前后两行写在同一个块里。第 7 节会讲 Retrofit 内部是怎么切线程的。</p>
+
+<p>于是 ViewModel 里没有任何一行和线程有关的代码：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> <span class="tok-fn">OrderDetailViewModel</span>(</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> repository: OrderRepository,</span>
+<span class="line">) : <span class="tok-fn">ViewModel</span>() {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> _uiState = MutableStateFlow&lt;OrderUiState&gt;(OrderUiState<span class="tok-prop">.Loading</span>)</span>
+<span class="line">    <span class="tok-kw">val</span> uiState: StateFlow&lt;OrderUiState&gt; = _uiState<span class="tok-prop">.asStateFlow</span>()</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">var</span> loadJob: Job? = <span class="tok-kw">null</span></span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-fn">load</span>(orderId: String) {</span>
+<span class="line">        loadJob?<span class="tok-prop">.cancel</span>()                      <span class="tok-com">// 旧的加载在下一个挂起点停下来</span></span>
+<span class="line">        loadJob = viewModelScope<span class="tok-prop">.launch</span> {</span>
+<span class="line">            _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Loading</span> }</span>
+<span class="line">            try {</span>
+<span class="line">                <span class="tok-kw">val</span> order = repository<span class="tok-prop">.loadOrder</span>(orderId)</span>
+<span class="line">                _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Loaded</span>(order) }</span>
+<span class="line">            } <span class="tok-fn">catch</span> (e: IOException) {</span>
+<span class="line">                _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Error</span>(<span class="tok-str">&quot;订单加载失败，请稍后重试&quot;</span>) }</span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>代码里的 <code>OrderUiState</code> 是一个密封接口，有 <code>Loading</code>、<code>Loaded</code>、<code>Error</code> 三种取值，完整的定义放在第 6 节。</p>
+
+<p>开头第二条反馈，连点两次刷新之后新旧结果互相覆盖，就是被 <code>loadJob?.cancel()</code> 这一行解决的。旧的协程被取消之后，不会再走到更新状态的那一行。</p>
+
+<p>关于 <code>withContext</code> 的开销，官方文档的说法是：和等价的回调写法相比，它没有额外的开销。所以不必为了少切几次线程而把代码绕来绕去。需要留意的只有两点。一是在已经处于 <code>IO</code> 上的时候再 <code>withContext(Dispatchers.IO)</code>，调度器没有变，不会真的分发。二是同一个函数里要发起十次网络请求的话，可以合到一个外层的 <code>withContext</code> 里，只切一次线程。</p>
+
+<p><code>withContext</code> 和 <code>launch</code> 的区别在于等不等。<code>withContext</code> 挂起当前协程，拿到结果再往下走。<code>launch</code> 启动一个协程就返回，结果要靠别的方式交回来。需要结果的时候用前者，只是发起一件事的时候用后者。</p>
+
+<h3 id="3-2-api">3.2 把回调式的 API 包成挂起函数</h3>
+
+<p>不是所有库都提供了 suspend 函数，系统 API 里大量还是回调式的，直接用又回到了开头那种层层嵌套的写法。遇到这种 API，可以在它外面薄薄地包一层 suspend 函数，用的是 <code>suspendCancellableCoroutine</code>：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> LocationManager<span class="tok-prop">.awaitCurrentLocation</span>(provider: String): Location =</span>
+<span class="line">    suspendCancellableCoroutine { cont -&gt;</span>
+<span class="line">        <span class="tok-fn">getCurrentLocation</span>(provider, <span class="tok-kw">null</span>, mainExecutor) { location -&gt;</span>
+<span class="line">            <span class="tok-kw">if</span> (location == <span class="tok-kw">null</span>) {</span>
+<span class="line">                cont<span class="tok-prop">.resumeWithException</span>(<span class="tok-fn">IllegalStateException</span>(<span class="tok-str">&quot;拿不到位置&quot;</span>))</span>
+<span class="line">            } <span class="tok-kw">else</span> {</span>
+<span class="line">                cont<span class="tok-prop">.resume</span>(location)</span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">        cont<span class="tok-prop">.invokeOnCancellation</span> {</span>
+<span class="line">            <span class="tok-com">// 协程被取消时要收回的资源，在这里收回</span></span>
+<span class="line">        }</span>
+<span class="line">    }</span></code></pre>
+            </div>
+
+<p>调用 <code>suspendCancellableCoroutine</code> 的时候协程挂起，块里的代码负责注册回调。回调来了，用 <code>cont.resume</code> 或者 <code>cont.resumeWithException</code> 恢复协程。它和标准库的 <code>suspendCoroutine</code> 只差一点，就是取消。协程在等待期间被取消的话，这个函数抛出 <code>CancellationException</code>，而且之后哪怕回调来了、调用了 <code>resume</code>，协程也不会再恢复。协程库把这叫作及时取消的保证。<code>invokeOnCancellation</code> 里放的是取消时要做的清理，比如注销监听器。</p>
+
+<p>有两处要留意。回调的注册和注销必须是线程安全的，因为 <code>invokeOnCancellation</code> 可能在任何时候被调用，甚至和回调本身同时发生。另外，这个函数是为一次性回调准备的，会反复触发的回调要用 <code>callbackFlow</code>。</p>
+
+<p>包好之后，调用方就可以把它当普通挂起函数用。超时、取消、切换线程，前面讲的那些对它全部适用：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">val</span> location = <span class="tok-fn">withTimeout</span>(3_000) { locationManager<span class="tok-prop">.awaitCurrentLocation</span>(provider) }</span></code></pre>
+            </div>
+
+<h3 id="3-3-mutex">3.3 共享的状态放在哪：线程限定、原子类、Mutex</h3>
+
+<p>几个协程要读写同一份数据的时候，有三种办法，按优先级排。</p>
+
+<p>第一种，把状态限定在一条线程上。界面状态只在主线程上读写，而 <code>viewModelScope</code> 和 <code>lifecycleScope</code> 里的代码默认就在主线程上。同一个线程上的协程只会在挂起点互相切换，两次挂起之间的代码是一口气跑完的，不会执行到一半被别的协程插进来。所以只在主线程上读写的普通变量，用不着加锁。要留意的是挂起点本身：协程 A 读了某个变量之后挂起，等它恢复的时候，协程 B 可能已经把这个变量改掉了。</p>
+
+<p>第二种，把状态交给线程安全的类。<code>MutableStateFlow</code> 的 <code>update</code> 是原子操作，简单的计数和标志位可以用 <code>AtomicInteger</code> 这类。</p>
+
+<p>第三种，用 <code>Mutex</code>。前两种都不合适的时候才轮到它：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">private</span> <span class="tok-kw">val</span> uploadMutex = <span class="tok-fn">Mutex</span>()</span>
+<span class="line"><span class="tok-kw">private</span> <span class="tok-kw">val</span> uploaded = mutableSetOf&lt;String&gt;()</span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">uploadOnce</span>(file: File) {</span>
+<span class="line">    uploadMutex<span class="tok-prop">.withLock</span> {</span>
+<span class="line">        <span class="tok-kw">if</span> (file<span class="tok-prop">.name</span> <span class="tok-kw">in</span> uploaded) <span class="tok-kw">return</span></span>
+<span class="line">        repository<span class="tok-prop">.upload</span>(file)</span>
+<span class="line">        uploaded<span class="tok-prop">.add</span>(file<span class="tok-prop">.name</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>Mutex</code> 是协程版的互斥锁。它的 <code>lock</code> 是挂起函数，锁在别人手里的时候当前协程挂起，线程不占着。平时不用直接调 <code>lock</code>，用 <code>withLock</code>，它把 <code>lock</code>、<code>try/finally</code>、<code>unlock</code> 写在了一起，块里出了异常或者协程被取消，锁都会被释放。它是不可重入的，拿着锁的协程再去 <code>lock</code>，会把自己挂起，而且没有人能来解救。</p>
+
+<p>不要用 <code>synchronized</code> 包住会挂起的代码。Java 的监视器要求加锁和解锁在同一条线程上，协程挂起之后很可能换了一条线程再恢复，到解锁的时候就对不上了。<code>synchronized</code> 里面只能放不挂起的代码。</p>
+
+<h2 id="4">
+              4. 取消：协程什么时候停
+              <a class="anchor" href="#4">链接到此标题</a>
+            </h2>
+
+<p>取消是协作式的。<code>job.cancel()</code> 做的只是把这个 Job 标记成取消状态，正在跑的代码不会被打断。协程要到下一个挂起点，或者自己检查了状态之后，才会真正停下来。</p>
+
+<p>会响应取消的地方有三类。一类是挂起函数，<code>delay</code>、<code>withContext</code>、Room 和 Retrofit 的 suspend 函数都在里面，它们在挂起的时候被取消，恢复时会直接抛出 <code>CancellationException</code>。另一类是循环或者长计算里的 <code>ensureActive()</code> 和 <code>isActive</code>，得自己写。还有一类是 <code>yield()</code>，它让出线程，顺便检查取消。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">compressAll</span>(photos: List&lt;Photo&gt;): List&lt;File&gt; =</span>
+<span class="line">    <span class="tok-fn">withContext</span>(Dispatchers<span class="tok-prop">.Default</span>) {</span>
+<span class="line">        photos<span class="tok-prop">.map</span> { photo -&gt;</span>
+<span class="line">            <span class="tok-fn">ensureActive</span>()                 <span class="tok-com">// 已经被取消的话，这里抛出 CancellationException</span></span>
+<span class="line">            <span class="tok-fn">compress</span>(photo)</span>
+<span class="line">        }</span>
+<span class="line">    }</span></code></pre>
+            </div>
+
+<p>不响应取消的是不挂起的代码：<code>Thread.sleep</code>、阻塞的 IO、中间没有检查的大循环。它们在哪个线程上跑，就把那个线程占到跑完为止。能响应线程中断的阻塞调用，可以用 <code>runInterruptible</code> 包起来，协程被取消时它会中断那个线程。</p>
+
+<p>取消之后，协程不会立刻消失。<code>cancel()</code> 返回的时候，它可能还要再跑一小段才停在挂起点上。需要等它真的结束，用 <code>cancelAndJoin()</code>。</p>
+
+<p>取消一个协程的时候具体发生了这样几件事。它的 Job 进入取消状态，它启动的子协程跟着取消。如果它正停在某个挂起函数上，那个挂起函数会抛出 <code>CancellationException</code> 把它唤醒。它里面的 <code>finally</code> 会执行。一直到下一个挂起点或者取消检查的地方，它才真正停下。整个过程里没有任何线程被终止，协程所在的线程一直在正常地跑别人的任务。</p>
+
+<p>取消还会传到协程正在等的外部资源上。等网络请求的时候，Retrofit 会把这次请求取消掉。等回调的时候，<code>suspendCancellableCoroutine</code> 的 <code>invokeOnCancellation</code> 会被调用，可以在里面注销监听。协程库把这叫作及时取消：已经被取消的协程，哪怕结果正好在这时候回来，也不会再恢复。<code>withContext</code> 的结果回到原来的调度器时，如果发现调用方已经取消，结果会被直接丢掉。</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/05-cancellation.webp" alt="取消往下传，失败往上传" loading="lazy" /></figure>
+
+<p>图里是协程之间的父子关系。父协程被取消，所有子协程跟着取消，这一点在两种作用域里都一样。不一样的是子协程失败的情况，第 5 节接着说。</p>
+
+<p>取消之后还有三条规矩。</p>
+
+<p><strong>清理里还要调用挂起函数。</strong> 协程已经被取消了，它里面的挂起函数一调用就会抛出 <code>CancellationException</code>。清理工作必须做完的话，把这一段放进 <code>withContext(NonCancellable)</code>：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">try {</span>
+<span class="line">    <span class="tok-fn">upload</span>(file)</span>
+<span class="line">} finally {</span>
+<span class="line">    <span class="tok-com">// 协程已经被取消，这个调用照样会执行</span></span>
+<span class="line">    <span class="tok-fn">withContext</span>(NonCancellable) {</span>
+<span class="line">        dao<span class="tok-prop">.markUploadFailed</span>(file<span class="tok-prop">.id</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>NonCancellable</code> 只给 <code>withContext</code> 用，不要和调度器并列写在同一个 <code>withContext</code> 里。要切线程，在它的块里再套一层 <code>withContext(Dispatchers.IO)</code>。原因是 <code>withContext</code> 在回到原来的调度器时遵守“及时取消”的约定，调用方已经取消的话它会抛出 <code>CancellationException</code>，把 <code>try</code> 里原本的异常盖掉。从 <code>NonCancellable</code> 的块里出来以后，如果要接着碰界面，先调一次 <code>ensureActive()</code>。</p>
+
+<p><strong>不要把 <code>CancellationException</code> 吃掉。</strong> <code>catch</code> 里只写具体的异常类型，比如 <code>IOException</code>。写成 <code>Exception</code> 或者 <code>Throwable</code> 会把取消也接住，协程以为自己只是出了一点错，接着往下跑。标准库的 <code>runCatching</code> 捕获的正是 <code>Throwable</code>，所以挂起函数里不要直接用它：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> inline <span class="tok-kw">fun</span> &lt;T&gt; <span class="tok-fn">runSuspendCatching</span>(block: () -&gt; T): Result&lt;T&gt; =</span>
+<span class="line">    try {</span>
+<span class="line">        Result<span class="tok-prop">.success</span>(<span class="tok-fn">block</span>())</span>
+<span class="line">    } <span class="tok-fn">catch</span> (e: CancellationException) {</span>
+<span class="line">        throw e                             <span class="tok-com">// 取消不是失败，原样传出去</span></span>
+<span class="line">    } <span class="tok-fn">catch</span> (e: Throwable) {</span>
+<span class="line">        Result<span class="tok-prop">.failure</span>(e)</span>
+<span class="line">    }</span></code></pre>
+            </div>
+
+<p><strong>超时不算失败。</strong> <code>withTimeout</code> 到点之后抛出的是 <code>TimeoutCancellationException</code>，它是 <code>CancellationException</code> 的子类。于是有一个不太直观的后果：这个异常没被接住的话，外层的协程不会被当成失败，只是正常结束。想让超时算一种失败，用 <code>withTimeoutOrNull</code> 然后检查返回值，或者接住它再抛一个别的异常。另外，超时只能取消块里的协程，块里如果是不响应取消的阻塞代码，它还是会跑完。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">val</span> order = <span class="tok-fn">withTimeoutOrNull</span>(5_000) { repository<span class="tok-prop">.loadOrder</span>(orderId) }</span>
+<span class="line"><span class="tok-kw">if</span> (order == <span class="tok-kw">null</span>) {</span>
+<span class="line">    _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Error</span>(<span class="tok-str">&quot;加载超时，请重试&quot;</span>) }</span>
+<span class="line">    <span class="tok-kw">return</span></span>
+<span class="line">}</span>
+<span class="line">_uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Loaded</span>(order) }</span></code></pre>
+            </div>
+
+<h2 id="5">
+              5. 异常：出错之后往哪走
+              <a class="anchor" href="#5">链接到此标题</a>
+            </h2>
+
+<p>协程里的异常有四条去处，取决于两件事：它所在的协程是用 <code>launch</code> 还是用 <code>async</code> 启动的，所在的上下文里是普通的 <code>Job</code> 还是 <code>SupervisorJob</code>。</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/06-exceptions.webp" alt="异常去哪儿：先看在哪种作用域里，再看是 launch 还是 async" loading="lazy" /></figure>
+
+<p>带普通 <code>Job</code> 的作用域，就是 <code>coroutineScope</code>、<code>withContext</code>、<code>runBlocking</code> 里启动的子协程。一个子协程失败，所在的作用域被取消，兄弟协程一起停下，异常一路抛给最外层的调用方。在这种作用域里，<code>launch</code> 和 <code>async</code> 没有区别，<code>async</code> 启动的协程就算没有人来取结果，失败时照样会取消父协程。</p>
+
+<p><code>SupervisorJob</code> 是 <code>lifecycleScope</code>、<code>viewModelScope</code>、<code>supervisorScope</code> 这些。一个子协程失败，兄弟协程不受影响。接下来看它是 <code>launch</code> 还是 <code>async</code>：<code>launch</code> 的异常交给上下文里的 <code>CoroutineExceptionHandler</code>，没有这个处理器，就交给线程的 <code>uncaughtExceptionHandler</code>，在 Android 上就是崩溃。<code>async</code> 的异常只能从 <code>await()</code> 拿到，没有人 <code>await</code>，它就留在返回的 <code>Deferred</code> 里，不崩溃，也没有日志。</p>
+
+<p>最后这一格是最安静的一种失败。在 <code>viewModelScope</code> 里随手 <code>async</code> 了一下却忘了取结果，出错时什么现象都没有。</p>
+
+<p>所以处理异常的正路是把 <code>try/catch</code> 写在协程里面，就像第 3 节的 <code>load()</code> 那样：只捕获 <code>IOException</code>，捕获到之后把状态改成 <code>Error</code>。<code>CancellationException</code> 不是 <code>IOException</code>，取消照常往上走，不会被误接。</p>
+
+<p><code>CoroutineExceptionHandler</code> 的定位是兜底。它只在整个协程结束之后、异常没有别的地方可去时才被调用。给一个会传给父级的子协程单独挂处理器没有用，那种情况用的是父作用域里的那一个。它适合记日志、做上报，不适合拿来表达界面的错误状态。在 AndroidX 的两个作用域里要给它，可以写在启动协程的上下文参数里：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">private</span> <span class="tok-kw">val</span> errorLogger = CoroutineExceptionHandler { _, e -&gt;</span>
+<span class="line">    CrashReporter<span class="tok-prop">.record</span>(e)</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line">viewModelScope<span class="tok-prop">.launch</span>(errorLogger) { <span class="tok-com">/* … */</span> }</span></code></pre>
+            </div>
+
+<p>装了处理器之后，原本会崩溃的异常被它接住了。所以要不要装、装了以后做什么，得先想清楚。</p>
+
+<p>并发的时候，<code>coroutineScope</code> 和 <code>supervisorScope</code> 选哪个，看这几路任务是不是缺一不可：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">loadDetail</span>(orderId: String): OrderDetail = supervisorScope {</span>
+<span class="line">    <span class="tok-kw">val</span> invoice = async { api<span class="tok-prop">.getInvoice</span>(orderId) }</span>
+<span class="line">    <span class="tok-kw">val</span> logistics = async { api<span class="tok-prop">.getLogistics</span>(orderId) }</span>
+<span class="line">    <span class="tok-fn">OrderDetail</span>(</span>
+<span class="line">        order = <span class="tok-fn">requireNotNull</span>(dao<span class="tok-prop">.findById</span>(orderId))<span class="tok-prop">.toOrder</span>(),</span>
+<span class="line">        invoice = invoice<span class="tok-prop">.awaitOrNull</span>(),      <span class="tok-com">// 发票拿不到，不影响订单本身</span></span>
+<span class="line">        logistics = logistics<span class="tok-prop">.awaitOrNull</span>(),</span>
+<span class="line">    )</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">private</span> <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> &lt;T&gt; Deferred&lt;T&gt;<span class="tok-prop">.awaitOrNull</span>(): T? = try {</span>
+<span class="line">    <span class="tok-fn">await</span>()</span>
+<span class="line">} <span class="tok-fn">catch</span> (e: CancellationException) {</span>
+<span class="line">    throw e                                 <span class="tok-com">// 外层被取消时要照常传出去</span></span>
+<span class="line">} <span class="tok-fn">catch</span> (e: Exception) {</span>
+<span class="line">    <span class="tok-kw">null</span></span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>发票和物流是锦上添花的两路数据，缺了也照样能展示订单，所以用 <code>supervisorScope</code>，每一路单独取结果。如果三样数据缺一不可，就换成 <code>coroutineScope</code>，任何一路失败都会把另外两路取消，在外层写一个 <code>try/catch</code> 就够了。</p>
+
+<h2 id="6-stateflow">
+              6. 把结果交给界面：StateFlow 和生命周期
+              <a class="anchor" href="#6-stateflow">链接到此标题</a>
+            </h2>
+
+<p>开头第三条反馈，转屏之后重新加载，要分两步解决。加载放到 <code>viewModelScope</code> 里，转屏时 ViewModel 还在，协程不会被取消，这是第一步。第二步是给结果找一个界面销毁之后仍然存在的地方，这个地方就是 ViewModel 里的 <code>StateFlow</code>。</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/08-stateflow.webp" alt="冷流转热流：从数据层到界面的一条状态流" loading="lazy" /></figure>
+
+<p>Room 的查询返回的是一个冷流，每次有人收集它才执行一次查询。到 ViewModel 这一层，用 <code>stateIn</code> 把它转成一个 <code>StateFlow</code>，上游从此只启动一份，谁来收集都共享同一个结果。下面是订单详情页 ViewModel 的另一个版本，<code>uiState</code> 不再由 <code>load()</code> 一步一步地更新，而是直接从数据层的 Flow 转换过来：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">sealed</span> <span class="tok-kw">interface</span> OrderUiState {</span>
+<span class="line">    <span class="tok-kw">data</span> <span class="tok-kw">object</span> Loading : OrderUiState</span>
+<span class="line">    <span class="tok-kw">data</span> <span class="tok-kw">class</span> <span class="tok-fn">Loaded</span>(<span class="tok-kw">val</span> order: Order) : OrderUiState</span>
+<span class="line">    <span class="tok-kw">data</span> <span class="tok-kw">class</span> <span class="tok-fn">Error</span>(<span class="tok-kw">val</span> message: String) : OrderUiState</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">class</span> <span class="tok-fn">OrderDetailViewModel</span>(</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> repository: OrderRepository,</span>
+<span class="line">    savedStateHandle: SavedStateHandle,</span>
+<span class="line">) : <span class="tok-fn">ViewModel</span>() {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> orderId: String = <span class="tok-fn">checkNotNull</span>(savedStateHandle[<span class="tok-str">&quot;orderId&quot;</span>])</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">val</span> uiState: StateFlow&lt;OrderUiState&gt; = repository<span class="tok-prop">.observeOrder</span>(orderId)</span>
+<span class="line">        <span class="tok-prop">.map</span> { entity -&gt;</span>
+<span class="line">            <span class="tok-kw">if</span> (entity == <span class="tok-kw">null</span>) OrderUiState<span class="tok-prop">.Error</span>(<span class="tok-str">&quot;订单不存在&quot;</span>)</span>
+<span class="line">            <span class="tok-kw">else</span> OrderUiState<span class="tok-prop">.Loaded</span>(entity<span class="tok-prop">.toOrder</span>())</span>
+<span class="line">        }</span>
+<span class="line">        <span class="tok-prop">.catch</span> { <span class="tok-fn">emit</span>(OrderUiState<span class="tok-prop">.Error</span>(<span class="tok-str">&quot;订单加载失败，请稍后重试&quot;</span>)) }</span>
+<span class="line">        <span class="tok-prop">.stateIn</span>(</span>
+<span class="line">            scope = viewModelScope,</span>
+<span class="line">            started = SharingStarted<span class="tok-prop">.WhileSubscribed</span>(5_000),</span>
+<span class="line">            initialValue = OrderUiState<span class="tok-prop">.Loading</span>,</span>
+<span class="line">        )</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> _messages = Channel&lt;String&gt;(Channel<span class="tok-prop">.BUFFERED</span>)</span>
+<span class="line">    <span class="tok-kw">val</span> messages: Flow&lt;String&gt; = _messages<span class="tok-prop">.receiveAsFlow</span>()</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-fn">refresh</span>() {</span>
+<span class="line">        viewModelScope<span class="tok-prop">.launch</span> {</span>
+<span class="line">            try {</span>
+<span class="line">                repository<span class="tok-prop">.refreshOrder</span>(orderId)     <span class="tok-com">// 写进 Room 之后，uiState 的上游会再发一次</span></span>
+<span class="line">            } <span class="tok-fn">catch</span> (e: IOException) {</span>
+<span class="line">                _messages<span class="tok-prop">.send</span>(<span class="tok-str">&quot;刷新失败，请稍后重试&quot;</span>)</span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>StateFlow</code> 有三条性质，决定了它适合当界面状态。它必须有一个初值，新来的订阅者马上就能拿到当前的状态。它的更新是合并的，慢的订阅者会跳过中间的值，但一定拿得到最新的那一个。它永远不结束，所以收集它的协程必须属于一个会被取消的作用域。</p>
+
+<p><code>stateIn</code> 的三个参数，<code>scope</code> 是共享协程待的地方，<code>initialValue</code> 是最初的状态，<code>started</code> 决定上游什么时候启动、什么时候停：</p>
+
+<div class="table-wrap"><table><caption>SharingStarted 的三种策略</caption><thead><tr><th>策略</th><th>上游什么时候启动</th><th>什么时候停</th><th>适合</th></tr></thead><tbody><tr><td><code>Eagerly</code></td><td>立刻</td><td>永不停</td><td>必须一直保持着的数据</td></tr><tr><td><code>Lazily</code></td><td>第一个订阅者出现时</td><td>之后永不停</td><td>第一位用户来过之后就一直要保着的数据</td></tr><tr><td><code>WhileSubscribed</code></td><td>第一个订阅者出现时</td><td>最后一个离开一段时间后，下面写的是 5 秒</td><td>界面状态，转屏时不想打断加载</td></tr></tbody></table></div>
+
+<p>转屏的时候，旧界面销毁，新界面创建，中间只隔一瞬间。<code>WhileSubscribed(5_000)</code> 里的 5 秒正是留给这一瞬间的：最后一个订阅者离开 5 秒内又来了新的，上游就不会停，新界面直接拿到当前值。</p>
+
+<p><code>WhileSubscribed(5_000)</code> 的初值只在第一次起作用。之后上游停下来再启动，状态保持为上一次的值，不会闪一下加载中。</p>
+
+<p>上游的异常要在 <code>stateIn</code> 之前用 <code>catch</code> 接住，否则异常会终止共享协程，界面只会停在最后一个状态上。<code>catch</code> 只管它上游的异常，所以写在 <code>map</code> 的后面是对的。</p>
+
+<h3 id="6-1">6.1 收集要跟着“看得见”走</h3>
+
+<p>界面什么时候收集，决定了协程在后台是不是还在白白做功：</p>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/07-lifecycle.webp" alt="收集要跟着“看得见”走：STARTED 才收，STOPPED 就停" loading="lazy" /></figure>
+
+<p>应用退到后台时，Activity 只是停在了后台，还没有销毁，<code>lifecycleScope</code> 里的协程还在跑。直接写 <code>lifecycleScope.launch { viewModel.uiState.collect { … } }</code>，界面看不见的时候它照样在更新。<code>repeatOnLifecycle</code> 把收集放在一个随生命周期启停的协程里：到 <code>STARTED</code> 才启动，掉到 <code>STARTED</code> 以下就取消，再回来就重新启动。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> OrderDetailActivity : <span class="tok-fn">AppCompatActivity</span>() {</span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">onCreate</span>(savedInstanceState: Bundle?) {</span>
+<span class="line">        super<span class="tok-prop">.onCreate</span>(savedInstanceState)</span>
+<span class="line">        lifecycleScope<span class="tok-prop">.launch</span> {</span>
+<span class="line">            <span class="tok-fn">repeatOnLifecycle</span>(Lifecycle<span class="tok-prop">.State</span><span class="tok-prop">.STARTED</span>) {</span>
+<span class="line">                launch { viewModel<span class="tok-prop">.uiState</span><span class="tok-prop">.collect</span> { <span class="tok-fn">render</span>(it) } }</span>
+<span class="line">                launch { viewModel<span class="tok-prop">.messages</span><span class="tok-prop">.collect</span> { <span class="tok-fn">showSnackbar</span>(it) } }</span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>repeatOnLifecycle</code> 自己是挂起函数，所以要放在 <code>lifecycleScope.launch</code> 里面；它在生命周期销毁时返回。它要在 <code>onCreate</code> 或者 <code>onViewCreated</code> 里调用一次，不要写在会被反复执行的地方，否则可能同时跑着好几份。块每次重启都是一个新的协程，所以只需要执行一次的初始化不要写在里面。</p>
+
+<p>Compose 里对应的写法是 <code>collectAsStateWithLifecycle</code>，它来自 <code>androidx.lifecycle:lifecycle-runtime-compose</code> 这个依赖，默认也是 <code>STARTED</code> 开始收集、<code>STOPPED</code> 停止：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@Composable</span>
+<span class="line"><span class="tok-kw">fun</span> <span class="tok-fn">OrderDetailScreen</span>(viewModel: OrderDetailViewModel) {</span>
+<span class="line">    <span class="tok-kw">val</span> state <span class="tok-kw">by</span> viewModel<span class="tok-prop">.uiState</span><span class="tok-prop">.collectAsStateWithLifecycle</span>()</span>
+<span class="line">    <span class="tok-kw">when</span> (<span class="tok-kw">val</span> s = state) {</span>
+<span class="line">        OrderUiState<span class="tok-prop">.Loading</span> -&gt; <span class="tok-fn">LoadingIndicator</span>()</span>
+<span class="line">        <span class="tok-kw">is</span> OrderUiState<span class="tok-prop">.Loaded</span> -&gt; <span class="tok-fn">OrderContent</span>(s<span class="tok-prop">.order</span>)</span>
+<span class="line">        <span class="tok-kw">is</span> OrderUiState<span class="tok-prop">.Error</span> -&gt; <span class="tok-fn">ErrorPanel</span>(s<span class="tok-prop">.message</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>Compose 自带的 <code>collectAsState</code> 不感知生命周期，只要组件还在组合里就一直收集。同一个界面在 ViewPager 的下一页，或者返回栈的下面，组合还在，协程也还在跑。官方文档对 <code>LaunchedEffect</code> 也有同样的提醒：它的作用域绑的是组合，不是 Activity 的生命周期。</p>
+
+<h3 id="6-2">6.2 一次性事件和持续状态要分开</h3>
+
+<p>状态适合放在 <code>StateFlow</code> 里，事件不适合。“刷新失败”是一条提示，弹一次就该结束；如果把它做进 <code>uiState</code>，转屏之后新界面重新订阅，会再收到一次，提示又弹一遍。</p>
+
+<p>上面 ViewModel 里的 <code>_messages</code> 就是为事件准备的，用一个缓冲的 <code>Channel</code>，对外通过 <code>receiveAsFlow</code> 暴露成 <code>Flow</code>。界面同样在 <code>repeatOnLifecycle</code> 里收集它。这条做法没有官方条文，是社区这些年踩出来的经验，但道理是清楚的：状态是“现在是什么样”，事件是“刚才发生了什么”，两者的收集方式本来就不该一样。</p>
+
+<p>它也有代价。<code>receiveAsFlow</code> 里的每一条消息只发给一个订阅者，订阅者刚拿到消息就被取消的话，比如界面正好退到后台，这条消息就丢了。一条都不能丢的事件不适合走这条路。</p>
+
+<h3 id="6-3-flow">6.3 Flow 里常用的几个算符</h3>
+
+<div class="table-wrap"><table><caption>Flow 里常用的几个算符</caption><thead><tr><th>算符</th><th>做什么</th></tr></thead><tbody><tr><td><code>map</code>、<code>filter</code></td><td>转换、筛选每一个值</td></tr><tr><td><code>onEach</code></td><td>每来一个值做点事，常用来打日志</td></tr><tr><td><code>distinctUntilChanged</code></td><td>和上一个值相同就不往下发</td></tr><tr><td><code>combine</code></td><td>把几个流最新的值合在一起</td></tr><tr><td><code>debounce</code></td><td>停顿一段时间没有新值，才往下发最后一个</td></tr><tr><td><code>mapLatest</code></td><td>来了新值就取消上一次还没做完的转换</td></tr><tr><td><code>catch</code></td><td>接住上游的异常，换成别的值继续往下发</td></tr><tr><td><code>flowOn</code></td><td>让它上游的那一段在别的调度器上跑</td></tr></tbody></table></div>
+
+<p>把它们拼起来，就是一个搜索框：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">private</span> <span class="tok-kw">val</span> query = <span class="tok-fn">MutableStateFlow</span>(<span class="tok-str">&quot;&quot;</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">val</span> results: StateFlow&lt;List&lt;Order&gt;&gt; = query</span>
+<span class="line">    <span class="tok-prop">.debounce</span>(<span class="tok-num">300</span>)</span>
+<span class="line">    <span class="tok-prop">.distinctUntilChanged</span>()</span>
+<span class="line">    <span class="tok-prop">.mapLatest</span> { repository<span class="tok-prop">.search</span>(it) }       <span class="tok-com">// 新的关键词一来，上一次搜索就被取消</span></span>
+<span class="line">    <span class="tok-prop">.catch</span> { <span class="tok-fn">emit</span>(<span class="tok-fn">emptyList</span>()) }</span>
+<span class="line">    <span class="tok-prop">.stateIn</span>(viewModelScope, SharingStarted<span class="tok-prop">.WhileSubscribed</span>(5_000), <span class="tok-fn">emptyList</span>())</span></code></pre>
+            </div>
+
+<p><code>flowOn</code> 平时用得不多，因为数据层的挂起函数已经自己切好了线程。只有自己用 <code>flow {}</code> 写上游、里面又有阻塞调用的时候，才需要在它后面接一个 <code>flowOn(Dispatchers.IO)</code>。它只影响写在它前面的算符。</p>
+
+<p>上面用到的算符里，<code>mapLatest</code> 到 1.11.0 还标着实验性，用到它的地方要加 <code>@OptIn(ExperimentalCoroutinesApi::class)</code>。</p>
+
+<p>把上面这段搜索放回类里，后面测试一节会用到它：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@<span class="tok-fn">OptIn</span>(ExperimentalCoroutinesApi:<span class="tok-prop">:class</span>)</span>
+<span class="line"><span class="tok-kw">class</span> <span class="tok-fn">OrderSearchViewModel</span>(<span class="tok-kw">private</span> <span class="tok-kw">val</span> repository: OrderRepository) : <span class="tok-fn">ViewModel</span>() {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> query = <span class="tok-fn">MutableStateFlow</span>(<span class="tok-str">&quot;&quot;</span>)</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">val</span> results: StateFlow&lt;List&lt;Order&gt;&gt; = query</span>
+<span class="line">        <span class="tok-prop">.debounce</span>(<span class="tok-num">300</span>)</span>
+<span class="line">        <span class="tok-prop">.distinctUntilChanged</span>()</span>
+<span class="line">        <span class="tok-prop">.mapLatest</span> { repository<span class="tok-prop">.search</span>(it) }</span>
+<span class="line">        <span class="tok-prop">.catch</span> { <span class="tok-fn">emit</span>(<span class="tok-fn">emptyList</span>()) }</span>
+<span class="line">        <span class="tok-prop">.stateIn</span>(viewModelScope, SharingStarted<span class="tok-prop">.WhileSubscribed</span>(5_000), <span class="tok-fn">emptyList</span>())</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-fn">onQuery</span>(text: String) {</span>
+<span class="line">        query<span class="tok-prop">.value</span> = text</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<h3 id="6-4-compose">6.4 Compose 里的三个入口</h3>
+
+<p>Compose 里和协程打交道的入口主要有三个，各管一种场景。</p>
+
+<p>界面状态来自 ViewModel 的 <code>StateFlow</code>，用 <code>collectAsStateWithLifecycle</code> 把它变成组合里的状态，前面已经写过。</p>
+
+<p>跟着界面走的工作用 <code>LaunchedEffect</code>。它在进入组合时启动，key 变了就取消再重启，离开组合时取消，适合入场动画、按某个值定时刷新这一类事。</p>
+
+<p>响应点击这类回调，用 <code>rememberCoroutineScope()</code>：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@Composable</span>
+<span class="line"><span class="tok-kw">fun</span> <span class="tok-fn">RefreshButton</span>(onRefresh: <span class="tok-kw">suspend</span> () -&gt; Unit) {</span>
+<span class="line">    <span class="tok-kw">val</span> scope = <span class="tok-fn">rememberCoroutineScope</span>()</span>
+<span class="line">    <span class="tok-fn">Button</span>(onClick = { scope<span class="tok-prop">.launch</span> { <span class="tok-fn">onRefresh</span>() } }) {</span>
+<span class="line">        <span class="tok-fn">Text</span>(<span class="tok-str">&quot;刷新&quot;</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>它拿到的作用域在按钮离开组合时取消。用户在请求进行中关掉了页面，这个协程不会留下来。这个作用域里的工作只应该做和界面有关的事，业务上的加载还是交给 ViewModel，这是前面说过的分工。</p>
+
+<p>一次性任务的异步结果，官方文档推荐 <code>produceState</code>，同时把它的适用范围限定在不需要挺过转屏的任务上。要挺过转屏的，还是放 ViewModel。</p>
+
+<h2 id="7">
+              7. 数据层和后台任务
+              <a class="anchor" href="#7">链接到此标题</a>
+            </h2>
+
+<figure class="prose-figure"><img src="/images/android-kotlin-coroutines/09-data-layer.webp" alt="Retrofit 和 Room 都已经自己切好了线程" loading="lazy" /></figure>
+
+<p>Room 和 Retrofit 对 suspend 的支持，要点在于它们的 suspend 函数本身就不占主线程。调用方在主线程上调用，中间的线程切换由它们自己完成，调用方只是被挂起。</p>
+
+<p>Room 这边，suspend 的查询由生成的代码用 <code>withContext</code> 切到 Room 的执行器上。返回 <code>Flow</code> 的查询更省事，表里的数据一变，Flow 就自动再查一遍：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@Dao</span>
+<span class="line"><span class="tok-kw">interface</span> OrderDao {</span>
+<span class="line">    @<span class="tok-fn">Query</span>(<span class="tok-str">&quot;SELECT * FROM orders WHERE id = :id&quot;</span>)</span>
+<span class="line">    <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">findById</span>(id: String): OrderEntity?</span>
+<span class="line"></span>
+<span class="line">    @<span class="tok-fn">Query</span>(<span class="tok-str">&quot;SELECT * FROM orders WHERE id = :id&quot;</span>)</span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-fn">observeOrder</span>(id: String): Flow&lt;OrderEntity?&gt;</span>
+<span class="line"></span>
+<span class="line">    @Upsert</span>
+<span class="line">    <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">upsert</span>(order: OrderEntity)</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>几个 suspend 的写操作要放在同一个事务里，用 <code>withTransaction</code>。事务块跑在 Room 事务执行器的线程上，同一时间只有一个事务，其余的排队：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">db<span class="tok-prop">.withTransaction</span> {</span>
+<span class="line">    orderDao<span class="tok-prop">.upsert</span>(order)</span>
+<span class="line">    itemDao<span class="tok-prop">.replaceAll</span>(order<span class="tok-prop">.id</span>, order<span class="tok-prop">.items</span>)</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>Retrofit 这边，接口方法声明成 <code>suspend</code> 就够了：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">interface</span> OrderApi {</span>
+<span class="line">    @<span class="tok-fn">GET</span>(<span class="tok-str">&quot;orders/{id}&quot;</span>)</span>
+<span class="line">    <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">getOrder</span>(@<span class="tok-fn">Path</span>(<span class="tok-str">&quot;id&quot;</span>) id: String): OrderDto</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>它背后做的事和图里左边一栏一样：把 continuation 存起来，把请求交给 OkHttp，回调的时候再恢复。有两点和写业务代码直接相关。一是协程被取消时，它会调用 <code>call.cancel()</code>，用户退出页面，请求也跟着撤了。二是响应码不是 2xx 的时候抛的是 <code>HttpException</code>，它不是 <code>IOException</code>，想把它也当成一种失败，<code>catch</code> 里要单独写上。</p>
+
+<p>所以回到第 3 节那条规则：数据层的挂起函数要自己保证 main-safe，但在 Room 和 Retrofit 的 suspend 函数外面，不需要再套一层 <code>withContext(Dispatchers.IO)</code>。需要套的只有你自己写的阻塞代码。</p>
+
+<h3 id="7-1-workmanager">7.1 必须做完的事交给 WorkManager</h3>
+
+<p>界面的作用域随着界面取消，ViewModel 的作用域随着 ViewModel 取消。上传一张凭据这种事，用户关掉页面也应该做完，它需要一个比两者都活得久的东西。WorkManager 的 <code>CoroutineWorker</code> 就是干这个的：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> <span class="tok-fn">UploadReceiptWorker</span>(appContext: Context, params: WorkerParameters) :</span>
+<span class="line">    <span class="tok-fn">CoroutineWorker</span>(appContext, params) {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">doWork</span>(): Result {</span>
+<span class="line">        <span class="tok-kw">val</span> path = inputData<span class="tok-prop">.getString</span>(KEY_PATH) ?: <span class="tok-kw">return</span> Result<span class="tok-prop">.failure</span>()</span>
+<span class="line">        <span class="tok-kw">return</span> try {</span>
+<span class="line">            repository<span class="tok-prop">.uploadReceipt</span>(<span class="tok-fn">File</span>(path))</span>
+<span class="line">            Result<span class="tok-prop">.success</span>()</span>
+<span class="line">        } <span class="tok-fn">catch</span> (e: IOException) {</span>
+<span class="line">            <span class="tok-kw">if</span> (runAttemptCount &lt; <span class="tok-num">3</span>) Result<span class="tok-prop">.retry</span>() <span class="tok-kw">else</span> Result<span class="tok-prop">.failure</span>()</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>doWork</code> 是挂起函数，默认跑在 <code>Dispatchers.Default</code> 上，要换调度器就在它里面用 <code>withContext</code>。系统给它的时间上限是十分钟，到点或者约束条件不再满足时，WorkManager 会取消它返回的 future，协程的 <code>Job</code> 跟着被取消。所以 <code>doWork</code> 里面的阻塞代码同样要响应取消，这一点和普通的协程没有区别。</p>
+
+<p>提交任务的时候，把约束条件和重试的退避策略一起写上：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">val</span> request = OneTimeWorkRequestBuilder&lt;UploadReceiptWorker&gt;()</span>
+<span class="line">    <span class="tok-prop">.setInputData</span>(<span class="tok-fn">workDataOf</span>(KEY_PATH to file<span class="tok-prop">.path</span>))</span>
+<span class="line">    <span class="tok-prop">.setConstraints</span>(</span>
+<span class="line">        Constraints<span class="tok-prop">.Builder</span>()<span class="tok-prop">.setRequiredNetworkType</span>(NetworkType<span class="tok-prop">.CONNECTED</span>)<span class="tok-prop">.build</span>()</span>
+<span class="line">    )</span>
+<span class="line">    <span class="tok-prop">.setBackoffCriteria</span>(BackoffPolicy<span class="tok-prop">.EXPONENTIAL</span>, <span class="tok-num">10</span>, TimeUnit<span class="tok-prop">.SECONDS</span>)</span>
+<span class="line">    <span class="tok-prop">.build</span>()</span>
+<span class="line"></span>
+<span class="line">WorkManager<span class="tok-prop">.getInstance</span>(context)<span class="tok-prop">.enqueue</span>(request)</span></code></pre>
+            </div>
+
+<p>这段代码可以在任何地方调用，不需要一个协程。<code>doWork</code> 里返回 <code>Result.retry()</code> 之后，下一次尝试的间隔由这里的退避策略决定。</p>
+
+<p>还有一种情况介于两者之间：工作应该比调用方活得久，但调用方又想等它做完。官方给的写法是注入一个外部作用域，在它里面启动，再用 <code>join()</code> 等结果：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> <span class="tok-fn">ReceiptUploader</span>(<span class="tok-kw">private</span> <span class="tok-kw">val</span> externalScope: CoroutineScope) {</span>
+<span class="line">    <span class="tok-kw">suspend</span> <span class="tok-kw">fun</span> <span class="tok-fn">upload</span>(file: File) {</span>
+<span class="line">        externalScope<span class="tok-prop">.launch</span> { <span class="tok-fn">uploadBlocking</span>(file) }<span class="tok-prop">.join</span>()</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>launch</code> 把协程记在了外部作用域名下，调用方被取消它也不会停。<code>join</code> 只是挂起当前的协程，调用方取消的时候它照常抛出 <code>CancellationException</code>。</p>
+
+<h3 id="7-2-broadcastreceiver-service">7.2 没有自带作用域的组件：BroadcastReceiver 和 Service</h3>
+
+<p>Activity 和 Fragment 有 <code>lifecycleScope</code>，ViewModel 有 <code>viewModelScope</code>，<code>BroadcastReceiver</code> 什么都没有。它的 <code>onReceive</code> 在主线程上执行，返回之后系统就认为这次广播处理完了。要在这里做一点异步的事，先调用 <code>goAsync()</code> 拿到一个 <code>PendingResult</code>，系统会等到你调用它的 <code>finish()</code> 为止。这段时间仍然算在广播的执行时限里，前台广播 10 秒，后台广播 60 秒，超时就是一次广播 ANR。官方文档还提醒，这里的事情不做完，后面的广播就一直等着。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> SyncReceiver : <span class="tok-fn">BroadcastReceiver</span>() {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">onReceive</span>(context: Context, intent: Intent) {</span>
+<span class="line">        <span class="tok-kw">val</span> pendingResult = <span class="tok-fn">goAsync</span>()</span>
+<span class="line">        <span class="tok-kw">val</span> appContext = context<span class="tok-prop">.applicationContext</span></span>
+<span class="line">        <span class="tok-fn">CoroutineScope</span>(<span class="tok-fn">SupervisorJob</span>() + Dispatchers<span class="tok-prop">.IO</span>)<span class="tok-prop">.launch</span> {</span>
+<span class="line">            try {</span>
+<span class="line">                SyncWorker<span class="tok-prop">.sync</span>(appContext)          <span class="tok-com">// 几秒钟之内能做完的事</span></span>
+<span class="line">            } finally {</span>
+<span class="line">                pendingResult<span class="tok-prop">.finish</span>()               <span class="tok-com">// 不调用它，就是一次广播超时</span></span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>这里随手新建了一个作用域，和前面“不要随手新建作用域”的说法并不矛盾。这一次广播的协程，生命周期本来就该和这一次广播绑在一起，<code>finish()</code> 之后它也该结束了。能这么做的前提是事情够短。官方文档对 <code>goAsync</code> 的说明里写得很清楚，耗时长的任务应该交给 JobScheduler 或者 Service 这一类的机制。</p>
+
+<p>启动型的 Service 也没有自带作用域，自己创建一个，在 <code>onDestroy</code> 里取消：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">class</span> SyncService : <span class="tok-fn">Service</span>() {</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> serviceScope = <span class="tok-fn">CoroutineScope</span>(<span class="tok-fn">SupervisorJob</span>() + Dispatchers<span class="tok-prop">.IO</span>)</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">onStartCommand</span>(intent: Intent?, flags: Int, startId: Int): Int {</span>
+<span class="line">        serviceScope<span class="tok-prop">.launch</span> {</span>
+<span class="line">            try {</span>
+<span class="line">                SyncWorker<span class="tok-prop">.sync</span>(applicationContext)</span>
+<span class="line">            } finally {</span>
+<span class="line">                <span class="tok-fn">stopSelf</span>(startId)</span>
+<span class="line">            }</span>
+<span class="line">        }</span>
+<span class="line">        <span class="tok-kw">return</span> START_NOT_RESTART</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">onDestroy</span>() {</span>
+<span class="line">        serviceScope<span class="tok-prop">.cancel</span>()</span>
+<span class="line">        super<span class="tok-prop">.onDestroy</span>()</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>系统对从后台启动 Service 另有限制，能不能启动得单独考虑。所以实际的取舍是：几秒钟之内能做完的事，用 <code>goAsync</code> 配一个临时作用域；要可靠做完的事，交给 WorkManager。</p>
+
+<h2 id="8">
+              8. 测试和排错
+              <a class="anchor" href="#8">链接到此标题</a>
+            </h2>
+
+<h3 id="8-1">8.1 测试</h3>
+
+<p>前面反复说要把调度器注入进来，为的就是这一步。测试里把 <code>Dispatchers.Main</code> 换成一个测试调度器，再给 Repository 传一个假的实现，ViewModel 就可以在单元测试里跑了。</p>
+
+<p>下面的例子假定 <code>OrderRepository</code> 是一个接口，实际项目里通常都会这么做，前面为了少写几行才写成了类。<code>FakeOrderRepository</code> 是它在测试里的实现：<code>loadOrder</code> 直接返回准备好的订单，<code>calls</code> 记录被调用了几次，<code>failWith</code> 用来指定下一次调用抛什么异常。</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@<span class="tok-fn">OptIn</span>(ExperimentalCoroutinesApi:<span class="tok-prop">:class</span>)</span>
+<span class="line"><span class="tok-kw">class</span> <span class="tok-fn">MainDispatcherRule</span>(</span>
+<span class="line">    <span class="tok-kw">val</span> dispatcher: TestDispatcher = <span class="tok-fn">UnconfinedTestDispatcher</span>(),</span>
+<span class="line">) : <span class="tok-fn">TestWatcher</span>() {</span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">starting</span>(description: Description) = Dispatchers<span class="tok-prop">.setMain</span>(dispatcher)</span>
+<span class="line">    <span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">finished</span>(description: Description) = Dispatchers<span class="tok-prop">.resetMain</span>()</span>
+<span class="line">}</span>
+<span class="line"></span>
+<span class="line"><span class="tok-kw">class</span> OrderDetailViewModelTest {</span>
+<span class="line"></span>
+<span class="line">    @get<span class="tok-prop">:Rule</span></span>
+<span class="line">    <span class="tok-kw">val</span> mainDispatcherRule = <span class="tok-fn">MainDispatcherRule</span>()</span>
+<span class="line"></span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">val</span> repository = <span class="tok-fn">FakeOrderRepository</span>()</span>
+<span class="line">    <span class="tok-kw">private</span> <span class="tok-kw">lateinit</span> <span class="tok-kw">var</span> viewModel: OrderDetailViewModel</span>
+<span class="line"></span>
+<span class="line">    @Test</span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-str">`加载成功之后是 Loaded`</span>() = <span class="tok-fn">runTest</span>(mainDispatcherRule<span class="tok-prop">.dispatcher</span>) {</span>
+<span class="line">        viewModel = <span class="tok-fn">OrderDetailViewModel</span>(repository)</span>
+<span class="line">        viewModel<span class="tok-prop">.load</span>(<span class="tok-str">&quot;42&quot;</span>)</span>
+<span class="line">        <span class="tok-fn">assertEquals</span>(OrderUiState<span class="tok-prop">.Loaded</span>(FAKE_ORDER), viewModel<span class="tok-prop">.uiState</span><span class="tok-prop">.value</span>)</span>
+<span class="line">    }</span>
+<span class="line"></span>
+<span class="line">    @Test</span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-str">`加载失败之后是 Error`</span>() = <span class="tok-fn">runTest</span>(mainDispatcherRule<span class="tok-prop">.dispatcher</span>) {</span>
+<span class="line">        repository<span class="tok-prop">.failWith</span>(<span class="tok-fn">IOException</span>(<span class="tok-str">&quot;timeout&quot;</span>))</span>
+<span class="line">        viewModel = <span class="tok-fn">OrderDetailViewModel</span>(repository)</span>
+<span class="line">        viewModel<span class="tok-prop">.load</span>(<span class="tok-str">&quot;42&quot;</span>)</span>
+<span class="line">        assertIs&lt;OrderUiState<span class="tok-prop">.Error</span>&gt;(viewModel<span class="tok-prop">.uiState</span><span class="tok-prop">.value</span>)</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>runTest</code> 跑在一个线程上，<code>delay</code> 之类的时间等待会跳过。它的默认超时是 60 秒，测试里有永远不结束的协程就放到 <code>backgroundScope</code> 里，不然测试会一直挂到超时。</p>
+
+<p><code>UnconfinedTestDispatcher</code> 来了任务就执行，所以 <code>load(&quot;42&quot;)</code> 返回的时候状态已经更新完了，测试写起来是顺序的。想验证“请求发出去了但还没回来”这类中间状态，换 <code>StandardTestDispatcher</code>，它把任务排进调度器，等你发话：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@Test</span>
+<span class="line"><span class="tok-kw">fun</span> <span class="tok-str">`请求在 advanceUntilIdle 之后才发出`</span>() = runTest {</span>
+<span class="line">    Dispatchers<span class="tok-prop">.setMain</span>(<span class="tok-fn">StandardTestDispatcher</span>(testScheduler))</span>
+<span class="line">    try {</span>
+<span class="line">        viewModel = <span class="tok-fn">OrderDetailViewModel</span>(repository)</span>
+<span class="line">        viewModel<span class="tok-prop">.load</span>(<span class="tok-str">&quot;42&quot;</span>)</span>
+<span class="line">        <span class="tok-fn">assertEquals</span>(<span class="tok-num">0</span>, repository<span class="tok-prop">.calls</span>)        <span class="tok-com">// 还排着队</span></span>
+<span class="line">        <span class="tok-fn">advanceUntilIdle</span>()</span>
+<span class="line">        <span class="tok-fn">assertEquals</span>(<span class="tok-num">1</span>, repository<span class="tok-prop">.calls</span>)</span>
+<span class="line">    } finally {</span>
+<span class="line">        Dispatchers<span class="tok-prop">.resetMain</span>()</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>所有测试调度器共用同一个调度器时钟，这样 <code>advanceTimeBy</code>、<code>runCurrent</code> 这些操作对它们是一起生效的。<code>Dispatchers.setMain</code> 到 1.11.0 仍然标着实验性，所以类上要加 <code>@OptIn(ExperimentalCoroutinesApi::class)</code>。</p>
+
+<p>虚拟时间在这个时候派上用场。第 6 节搜索框的 <code>debounce(300)</code> 要等 300 毫秒，测试里不用真的等：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">@<span class="tok-fn">OptIn</span>(ExperimentalCoroutinesApi:<span class="tok-prop">:class</span>)</span>
+<span class="line"><span class="tok-kw">class</span> OrderSearchViewModelTest {</span>
+<span class="line"></span>
+<span class="line">    @Test</span>
+<span class="line">    <span class="tok-kw">fun</span> <span class="tok-str">`停顿 300 毫秒之后才发起搜索`</span>() = runTest {</span>
+<span class="line">        <span class="tok-kw">val</span> repository = <span class="tok-fn">FakeOrderRepository</span>()</span>
+<span class="line">        Dispatchers<span class="tok-prop">.setMain</span>(<span class="tok-fn">StandardTestDispatcher</span>(testScheduler))</span>
+<span class="line">        try {</span>
+<span class="line">            <span class="tok-kw">val</span> viewModel = <span class="tok-fn">OrderSearchViewModel</span>(repository)</span>
+<span class="line">            viewModel<span class="tok-prop">.onQuery</span>(<span class="tok-str">&quot;鞋&quot;</span>)</span>
+<span class="line">            <span class="tok-fn">runCurrent</span>()                       <span class="tok-com">// 执行到下一个挂起点，debounce 还在计时</span></span>
+<span class="line">            <span class="tok-fn">assertEquals</span>(<span class="tok-num">0</span>, repository<span class="tok-prop">.calls</span>)</span>
+<span class="line"></span>
+<span class="line">            <span class="tok-fn">advanceTimeBy</span>(<span class="tok-num">300</span>)                 <span class="tok-com">// 虚拟时间往前走 300 毫秒</span></span>
+<span class="line">            <span class="tok-fn">runCurrent</span>()                       <span class="tok-com">// 执行恰好排在这一刻的任务</span></span>
+<span class="line">            <span class="tok-fn">assertEquals</span>(<span class="tok-num">1</span>, repository<span class="tok-prop">.calls</span>)</span>
+<span class="line">        } finally {</span>
+<span class="line">            Dispatchers<span class="tok-prop">.resetMain</span>()</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>advanceTimeBy</code> 只执行排在它之前的任务，恰好排在第 300 毫秒的那个不包含在内，所以后面要再跟一句 <code>runCurrent</code>。整个测试一瞬间就跑完，验证的却是“不到 300 毫秒不发请求，到了才发”这件事。</p>
+
+<h3 id="8-2">8.2 排错</h3>
+
+<p>出了问题，先看症状落在哪一类：</p>
+
+<div class="table-wrap"><table><caption>协程相关问题的症状和方向</caption><thead><tr><th>症状</th><th>多半的原因</th><th>往哪儿看</th></tr></thead><tbody><tr><td>界面卡顿</td><td>trace 里主线程在读写文件或数据库，数据层有一段阻塞代码没放进 <code>withContext</code></td><td>主线程栈顶的业务函数</td></tr><tr><td>退出页面后闪退</td><td>日志里是更新界面的代码抛的异常，协程跑在不随生命周期取消的作用域里</td><td>启动它的是哪个作用域</td></tr><tr><td>协程停在某一处</td><td>被取消后又调用了挂起函数，或者异常被吃掉</td><td>有没有 <code>catch</code> 范围过宽，有没有 <code>runCatching</code></td></tr><tr><td>界面停在加载中</td><td>上游出了异常，被 <code>catch</code> 之外的地方吞掉</td><td><code>stateIn</code> 之前有没有 <code>catch</code></td></tr><tr><td>界面在后台也刷新</td><td>收集没放在 <code>repeatOnLifecycle</code> 里</td><td>界面层的收集代码</td></tr><tr><td>测试卡到超时</td><td>有永远不结束的协程没放进 <code>backgroundScope</code></td><td>测试里启动的协程</td></tr></tbody></table></div>
+
+<p>协程库自带一套调试模式。打开之后，每个协程会分到一个编号，执行它的线程名里会带上协程的名字和编号，比如 <code>coroutine#12</code>，默认的名字就是 <code>coroutine</code>。它由系统属性 <code>kotlinx.coroutines.debug</code> 控制，取值可以是 <code>on</code>、<code>off</code>，或者默认的 <code>auto</code>，<code>auto</code> 表示 JVM 开启了断言才启用。这个属性只在类加载时读一次，调试包里要打开，得在 <code>Application</code> 的 <code>attachBaseContext</code> 里先设好：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">override</span> <span class="tok-kw">fun</span> <span class="tok-fn">attachBaseContext</span>(base: Context) {</span>
+<span class="line">    System<span class="tok-prop">.setProperty</span>(<span class="tok-str">&quot;kotlinx.coroutines.debug&quot;</span>, <span class="tok-str">&quot;on&quot;</span>)</span>
+<span class="line">    super<span class="tok-prop">.attachBaseContext</span>(base)</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p><code>CoroutineName</code> 可以给协程起一个有意义的名字，排查的时候线程名一眼就能认出来：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line">viewModelScope<span class="tok-prop">.launch</span>(<span class="tok-fn">CoroutineName</span>(<span class="tok-str">&quot;load-order&quot;</span>)) { <span class="tok-com">/* … */</span> }</span></code></pre>
+            </div>
+
+<h2 id="9">
+              9. 一张评审清单
+              <a class="anchor" href="#9">链接到此标题</a>
+            </h2>
+
+<p>碰到启动协程的代码，按顺序问这几个问题：</p>
+
+<div class="table-wrap"><table><caption>启动协程之前要问的问题</caption><thead><tr><th>问题</th><th>不对的时候会怎样</th></tr></thead><tbody><tr><td>这段工作属于谁，作用域选对了吗</td><td>界面销毁后还在跑，或者转屏时被白白取消</td></tr><tr><td>有没有把 <code>Dispatchers</code> 写死</td><td>测试里换不掉调度器</td></tr><tr><td>数据层的挂起函数是不是 main-safe</td><td>主线程被卡住</td></tr><tr><td>阻塞的循环里有没有 <code>ensureActive</code></td><td>取消之后代码照跑</td></tr><tr><td><code>catch</code> 的是不是具体类型</td><td>取消被吃掉，协程停不下来</td></tr><tr><td><code>async</code> 的结果有没有人 <code>await</code></td><td>出错了没有任何提示</td></tr><tr><td><code>stateIn</code> 前面有没有 <code>catch</code></td><td>界面停在最后一个状态</td></tr><tr><td>收集有没有放进 <code>repeatOnLifecycle</code></td><td>应用在后台也在刷新界面</td></tr><tr><td><code>StateFlow</code> 里有没有塞一次性事件</td><td>转屏之后提示重复弹出</td></tr><tr><td>必须做完的事有没有交给 WorkManager</td><td>页面一关任务就没了</td></tr></tbody></table></div>
+
+<p>还有几句流传很广的说法，对照着前面的内容过一遍：</p>
+
+<div class="table-wrap"><table><caption>几句常见的说法</caption><thead><tr><th>说法</th><th>实际情况</th></tr></thead><tbody><tr><td>加了 <code>suspend</code> 就会在后台线程上跑</td><td>不对，<code>suspend</code> 只表示这个函数可以挂起，线程由调度器决定</td></tr><tr><td>挂起函数都要包一层 IO 调度器</td><td>只有自己写的阻塞代码需要，Room 和 Retrofit 的 suspend 函数不需要</td></tr><tr><td><code>viewModelScope</code> 里 <code>launch</code> 出错一定崩溃</td><td>没装异常处理器的话会崩溃，装了就由处理器接住</td></tr><tr><td><code>viewModelScope</code> 里 <code>async</code> 出错会崩溃</td><td>不会，异常留在 <code>Deferred</code> 里，没人 <code>await</code> 就没人知道</td></tr><tr><td>超时会抛异常，所以外层协程会失败</td><td>超时抛的是 <code>CancellationException</code> 的子类，外层只是正常结束</td></tr><tr><td><code>cancel</code> 之后协程马上就停了</td><td>要到下一个挂起点或者取消检查的地方才停</td></tr><tr><td>状态和提示都用 <code>StateFlow</code> 发</td><td>提示是事件，放进 <code>StateFlow</code> 转屏之后会重复弹</td></tr><tr><td><code>lifecycleScope</code> 里收集 Flow 就够了</td><td>还要再套一层 <code>repeatOnLifecycle</code></td></tr><tr><td><code>runBlocking</code> 可以随手把挂起变成同步</td><td>它会阻塞当前线程，在主线程上就是 ANR。只该出现在 <code>main</code> 函数、测试和非挂起的回调里</td></tr><tr><td><code>goAsync()</code> 之后想干多久都行</td><td>到 <code>finish()</code> 为止的时间仍然算在广播的时限里，前台 10 秒，后台 60 秒</td></tr></tbody></table></div>
+
+<h2 id="10">
+              10. 回到那三条反馈
+              <a class="anchor" href="#10">链接到此标题</a>
+            </h2>
+
+<p>开头那个订单详情页，换上协程之后只有一个地方在管加载：</p>
+
+<div class="code">
+              <div class="code__bar">
+                <span class="code__file"></span>
+                <span class="code__lang">KOTLIN</span>
+                <button class="code__copy" type="button" data-copy>
+                  复制到剪贴板
+                </button>
+              </div>
+              <pre><code><span class="line"><span class="tok-kw">fun</span> <span class="tok-fn">load</span>(orderId: String) {</span>
+<span class="line">    loadJob?<span class="tok-prop">.cancel</span>()</span>
+<span class="line">    loadJob = viewModelScope<span class="tok-prop">.launch</span> {</span>
+<span class="line">        _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Loading</span> }</span>
+<span class="line">        try {</span>
+<span class="line">            <span class="tok-kw">val</span> order = repository<span class="tok-prop">.loadOrder</span>(orderId)</span>
+<span class="line">            _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Loaded</span>(order) }</span>
+<span class="line">        } <span class="tok-fn">catch</span> (e: IOException) {</span>
+<span class="line">            _uiState<span class="tok-prop">.update</span> { OrderUiState<span class="tok-prop">.Error</span>(<span class="tok-str">&quot;订单加载失败，请稍后重试&quot;</span>) }</span>
+<span class="line">        }</span>
+<span class="line">    }</span>
+<span class="line">}</span></code></pre>
+            </div>
+
+<p>第一条反馈，退出页面后闪退：协程跑在一个会随界面取消的作用域里。属于界面的工作放 <code>lifecycleScope</code>，属于数据的工作放 <code>viewModelScope</code>，选哪一个看它属于谁。协程取消之后不会再走到更新界面的代码，Retrofit 的请求也跟着取消。</p>
+
+<p>第二条反馈，新旧结果互相覆盖：<code>loadJob?.cancel()</code> 之后旧的协程停在下一个挂起点上，新的协程从这之后才开始。</p>
+
+<p>第三条反馈，转屏重新加载：加载放在 <code>viewModelScope</code> 里，转屏时 ViewModel 还在。结果放在 <code>StateFlow</code> 里，新界面一订阅就拿到当前值，不用再请求一遍。</p>
+
+<p>请求编号、<code>isFinishing</code>、结果缓存，这三处补丁一行都不用写了。协程没有给每个问题各配一个工具，它给的是挂起、作用域、父子关系这三样东西，问题是在这个框架里自己消失的。</p>
+
+<h2 id="section-25">
+              附：版本速查
+              <a class="anchor" href="#section-25">链接到此标题</a>
+            </h2>
+
+<div class="table-wrap"><table><caption>已核对的版本差异</caption><thead><tr><th>行为</th><th>版本</th><th>说明</th></tr></thead><tbody><tr><td>Room 事务所在的线程</td><td>2.4.3 起</td><td><code>withTransaction</code> 从这个版本起把事务块放到事务执行器的线程上；2.4.3 到 2.8.5 之间的七个版本都看过，更早的没有核对</td></tr><tr><td><code>withTransaction</code> 的位置</td><td>2.6.1 及以前在 <code>room-ktx</code></td><td>2.8.5 在 <code>room-runtime</code> 里，用哪个版本就引哪个</td></tr><tr><td><code>ViewModel</code> 可注入作用域</td><td>2.9.1 起</td><td>2.9.1、2.10.0、2.11.1 里都有接收 <code>CoroutineScope</code> 的构造函数</td></tr><tr><td><code>setMain</code> 仍是实验性</td><td>1.11.0</td><td>完整的名字是 <code>Dispatchers.setMain</code>，用的时候要加 <code>@OptIn</code></td></tr><tr><td><code>lifecycleScope</code> 的位置</td><td>2.11.1</td><td>定义在 <code>lifecycle-common</code> 里；更早的版本在哪个依赖里没有核对</td></tr></tbody></table></div>
+
+<p>表里“X 起”的意思是：我在 X 这个版本的源码里见到了对应的代码，在它的前一个版本里没有见到。</p>
+
+<h2 id="section-26">
+              参考资料
+              <a class="anchor" href="#section-26">链接到此标题</a>
+            </h2>
+
+<p>源码都取自这几个库在 Maven 上的官方 sources 包，版本和开头标的一致。</p>
+
+<ul><li><a href="https://developer.android.google.cn/kotlin/coroutines">Android 官方：Kotlin coroutines on Android</a>：main-safe 的定义，<code>withContext</code> 的基本写法</li><li><a href="https://developer.android.google.cn/kotlin/coroutines/coroutines-best-practices">Android 官方：Kotlin coroutines best practices</a>：注入调度器、ViewModel 负责启动协程、外部作用域等九条建议</li><li><a href="https://developer.android.google.cn/kotlin/coroutines/coroutines-adv">Android 官方：Improve app performance with Kotlin coroutines</a>：<code>withContext</code> 的性能说明，<code>launch</code> 和 <code>async</code> 的选择</li><li><a href="https://developer.android.google.cn/topic/libraries/architecture/coroutines">Android 官方：Use Kotlin coroutines with lifecycle-aware components</a>：<code>LaunchedEffect</code> 的作用域，<code>collectAsStateWithLifecycle</code> 的默认行为</li><li><a href="https://developer.android.google.cn/topic/libraries/architecture/workmanager/advanced/coroutineworker">Android 官方：CoroutineWorker</a></li><li><a href="https://developer.android.google.cn/kotlin/flow">Android 官方：Kotlin flows on Android</a></li><li><a href="https://kotlinlang.org/docs/coroutines-guide.html">Kotlin 官方：Coroutines guide</a></li><li><a href="https://kotlinlang.org/docs/cancellation-and-timeouts.html">Kotlin 官方：Cancellation and timeouts</a></li><li><a href="https://kotlinlang.org/docs/exception-handling.html">Kotlin 官方：Exception handling</a></li><li><a href="https://kotlinlang.org/docs/flow.html">Kotlin 官方：Asynchronous Flow</a></li><li><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/README.md">kotlinx.coroutines 1.11.0 源码</a>：<code>Builders.common.kt</code> 里 <code>launch</code>、<code>async</code>、<code>withContext</code> 的文档，<code>CoroutineExceptionHandler.kt</code>、<code>Supervisor.kt</code>、<code>NonCancellable.kt</code>、<code>Timeout.kt</code> 里的坑都写在文档里</li><li>AndroidX 的 sources 包：<code>androidx.lifecycle:lifecycle-*:2.11.1</code>、<code>androidx.room:room-runtime-android:2.8.5</code>、<code>androidx.work:work-runtime:2.12.0</code>、<code>androidx.compose.runtime:runtime-android:1.13.0</code></li><li><code>com.squareup.retrofit2:retrofit:3.0.0</code> 的 sources 包：<code>KotlinExtensions.kt</code>、<code>HttpServiceMethod.java</code>、<code>Platform.java</code></li></ul>
+
+            <div class="post-end">
+              <span class="avatar" aria-hidden="true">🌤️</span>
+              <span>文中的订单详情页及其代码是教学示例；线程数、超时时间等数值以开头标注的版本为准，行为描述对着这些版本的源码核对过。</span>
+            </div>
+          </article>
+        </div>
+
+        <aside class="post-aside">
+          <nav class="toc" aria-label="本页目录">
+            <h4>本页目录</h4>
+            <ol>
+              <li><a href="#1">1. 挂起：让出的是线程</a></li><li><a href="#2">2. 启动：作用域、构造器、调度器</a></li><li><a href="#3">3. 主线程安全：切线程的事写在数据层</a></li><li><a href="#4">4. 取消：协程什么时候停</a></li><li><a href="#5">5. 异常：出错之后往哪走</a></li><li><a href="#6-stateflow">6. 把结果交给界面：StateFlow 和生命周期</a></li><li><a href="#7">7. 数据层和后台任务</a></li><li><a href="#8">8. 测试和排错</a></li><li><a href="#9">9. 一张评审清单</a></li><li><a href="#10">10. 回到那三条反馈</a></li><li><a href="#section-25">附：版本速查</a></li><li><a href="#section-26">参考资料</a></li>
+            </ol>
+          </nav>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <svg class="footer__cloud" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 60V38 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0 a100 38 0 0 1 200 0V60Z" fill="currentColor" />
+      </svg>
+      <div class="shell">
+        <div class="footer__bar">
+          <p class="footer__copy">© 2026 潦草地</p>
+          <p class="footer__note">
+            Markdown 写作 · 静态输出 · 零依赖 ·
+            <a href="/rss.xml">RSS 订阅</a>
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var themeBtn = document.querySelector("[data-theme-toggle]");
+        function syncTheme() {
+          if (!themeBtn) return;
+          var dark = document.documentElement.dataset.theme === "dark";
+          themeBtn.setAttribute("aria-label", dark ? "切换到亮色" : "切换到暗色");
+        }
+        if (themeBtn) {
+          syncTheme();
+          themeBtn.addEventListener("click", function () {
+            var root = document.documentElement;
+            var next = root.dataset.theme === "dark" ? "light" : "dark";
+            // 只在切换的这一瞬间打开颜色过渡，避免影响平时的悬停
+            root.classList.add("is-swapping");
+            window.setTimeout(function () {
+              root.classList.remove("is-swapping");
+            }, 620);
+            root.dataset.theme = next;
+            try {
+              localStorage.setItem("lc-theme", next);
+            } catch (e) {}
+            syncTheme();
+          });
+        }
+
+        var header = document.querySelector("[data-header]");
+        function onScroll() {
+          header.classList.toggle("is-solid", window.scrollY > 24);
+        }
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        // 演示：行宽
+        var demo = document.querySelector("[data-demo]");
+        if (demo) {
+          var stage = demo.querySelector("[data-stage]");
+          var input = demo.querySelector("[data-in]");
+          var out = demo.querySelector("[data-out]");
+          var apply = function () {
+            var n = Number(input.value);
+            stage.style.maxWidth = n + "em";
+            out.textContent = n;
+          };
+          input.addEventListener("input", apply);
+          apply();
+        }
+
+        // 复制
+        document.querySelectorAll("[data-copy]").forEach(function (btn) {
+          var code = btn.closest(".code").querySelector("code");
+          btn.addEventListener("click", function () {
+            var text = code.innerText;
+            var done = function () {
+              btn.textContent = "已复制";
+              setTimeout(function () {
+                btn.textContent = "复制到剪贴板";
+              }, 1500);
+            };
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(text).then(done, done);
+            } else {
+              done();
+            }
+          });
+        });
+
+        // 目录高亮
+        var links = document.querySelectorAll(".toc a");
+        function spy() {
+          var y = window.scrollY + 160;
+          var current = null;
+          links.forEach(function (a) {
+            var el = document.getElementById(a.getAttribute("href").slice(1));
+            if (el && el.getBoundingClientRect().top + window.scrollY <= y) {
+              current = a;
+            }
+          });
+          links.forEach(function (a) {
+            a.classList.toggle("is-active", a === current);
+          });
+        }
+        window.addEventListener("scroll", spy, { passive: true });
+        spy();
+      })();
+    </script>
+    <script>
+      // 目录高亮：跟随滚动标出当前小节
+      (function () {
+        var links = Array.prototype.slice.call(
+          document.querySelectorAll(".post-aside .toc a")
+        );
+        if (!links.length || !("IntersectionObserver" in window)) return;
+        var byId = {};
+        links.forEach(function (a) {
+          byId[a.getAttribute("href").slice(1)] = a;
+        });
+        var current = null;
+        var obs = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              var a = byId[e.target.id];
+              if (!a || a === current) return;
+              if (current) current.classList.remove("is-active");
+              a.classList.add("is-active");
+              current = a;
+            });
+          },
+          { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
+        );
+        document.querySelectorAll(".prose h2[id]").forEach(function (h) {
+          obs.observe(h);
+        });
+      })();
+    </script>
+      <script src="/search.js?v=27b032ce" defer></script>
+    <script src="/lightbox.js?v=024c90e7" defer></script>
+  </body>
+</html>
