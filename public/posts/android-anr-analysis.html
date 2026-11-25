@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-slug="android-anr-analysis">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,7 +27,7 @@
     <meta property="og:url" content="https://draft.run/posts/android-anr-analysis" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
-    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=f0912034" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=697d8b7f" />
   </head>
 
   <body>
@@ -96,13 +96,13 @@
       <div class="wrap post-layout">
         <div class="post-main">
           <article class="prose">
-            <figure class="prose-figure"><img src="/images/android-anr-analysis/00-cover.webp" alt="封面：五秒、十秒、二十秒" loading="lazy" /></figure>
+            <figure data-block="0" class="prose-figure"><img src="/images/android-anr-analysis/00-cover.webp" alt="封面：五秒、十秒、二十秒" loading="lazy" /></figure>
 
-<p>先看一张很常见的工单。</p>
+<p data-block="1">先看一张很常见的工单。</p>
 
-<p>用户在结账页点了“提交订单”，界面没有反应，过了几秒弹出“应用没有响应”。测试同学把手机连上电脑，抓到了这一段：</p>
+<p data-block="2">用户在结账页点了“提交订单”，界面没有反应，过了几秒弹出“应用没有响应”。测试同学把手机连上电脑，抓到了这一段：</p>
 
-<div class="code">
+<div data-block="3" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -117,9 +117,9 @@
 <span class="line">Frozen: false</span></code></pre>
             </div>
 
-<p>Reason 写得清清楚楚：一次抬起事件等了 5 秒没有被处理。接下来去看 trace 里主线程停在什么地方：</p>
+<p data-block="4">Reason 写得清清楚楚：一次抬起事件等了 5 秒没有被处理。接下来去看 trace 里主线程停在什么地方：</p>
 
-<div class="code">
+<div data-block="5" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -139,32 +139,32 @@
 <span class="line">  at java.lang.reflect.Method.invoke(Native Method)</span></code></pre>
             </div>
 
-<p>主线程在睡觉。它在等下一条消息，没有任何事情卡着它。</p>
+<p data-block="6">主线程在睡觉。它在等下一条消息，没有任何事情卡着它。</p>
 
-<p>于是工单的结论一栏写上了“无法定位，疑似偶发”，状态改成关闭。两个版本之后，同样的反馈又来了，Reason 还是那一行。</p>
+<p data-block="7">于是工单的结论一栏写上了“无法定位，疑似偶发”，状态改成关闭。两个版本之后，同样的反馈又来了，Reason 还是那一行。</p>
 
-<p>这类工单走不下去，多半不是 trace 不够多，而是一开始对 ANR 的理解就偏了。“ANR 就是主线程卡了 5 秒”这句话太顺口，它只说中了七个定时器里的一种，而且连这一种也没说准。更准确的说法是：系统和你所在的进程之间有几份带期限的约定，ANR 是某一份约定没有按时兑现时，系统给出的判定。每一份约定都有自己的计时起点、完成标志、期限长短，还有一条“到时候算在谁头上”的规则。</p>
+<p data-block="8">这类工单走不下去，多半不是 trace 不够多，而是一开始对 ANR 的理解就偏了。“ANR 就是主线程卡了 5 秒”这句话太顺口，它只说中了七个定时器里的一种，而且连这一种也没说准。更准确的说法是：系统和你所在的进程之间有几份带期限的约定，ANR 是某一份约定没有按时兑现时，系统给出的判定。每一份约定都有自己的计时起点、完成标志、期限长短，还有一条“到时候算在谁头上”的规则。</p>
 
-<p>把这几份约定逐个拆开，再看清超时之后系统做了什么、现场留在了哪里，开头那张工单其实是有路可走的。下面按这个顺序展开。没有特别说明时，源码指的是 Android 15（<code>android-15.0.0_r1</code>），和别的版本不一样的地方会单独标出来。</p>
+<p data-block="9">把这几份约定逐个拆开，再看清超时之后系统做了什么、现场留在了哪里，开头那张工单其实是有路可走的。下面按这个顺序展开。没有特别说明时，源码指的是 Android 15（<code>android-15.0.0_r1</code>），和别的版本不一样的地方会单独标出来。</p>
 
-<h2 id="1-anr">
+<h2 data-block="10" id="1-anr">
               1. 先对齐一下：ANR 到底指什么
               <a class="anchor" href="#1-anr">链接到此标题</a>
             </h2>
 
-<p>“ANR”这个词在日常讨论里至少指三样东西，它们并不总是同时出现。</p>
+<p data-block="11">“ANR”这个词在日常讨论里至少指三样东西，它们并不总是同时出现。</p>
 
-<p>第一样是用户看到的那个弹窗。标题是“某某没有响应”，正文问“要关闭它吗？”，下面两个选项，“等待”和“关闭应用”。如果应用在 manifest 里声明了接收错误报告的组件，还会多一个反馈入口。</p>
+<p data-block="12">第一样是用户看到的那个弹窗。标题是“某某没有响应”，正文问“要关闭它吗？”，下面两个选项，“等待”和“关闭应用”。如果应用在 manifest 里声明了接收错误报告的组件，还会多一个反馈入口。</p>
 
-<p>第二样是系统记下来的一次事件。主日志里的 <code>ANR in …</code>，events 日志里的 <code>am_anr</code>，以及 <code>/data/anr</code> 下的一份线程快照，都属于这一样。</p>
+<p data-block="13">第二样是系统记下来的一次事件。主日志里的 <code>ANR in …</code>，events 日志里的 <code>am_anr</code>，以及 <code>/data/anr</code> 下的一份线程快照，都属于这一样。</p>
 
-<p>第三样是进程的退出原因，<code>ApplicationExitInfo.REASON_ANR</code>。</p>
+<p data-block="14">第三样是进程的退出原因，<code>ApplicationExitInfo.REASON_ANR</code>。</p>
 
-<p>三样东西的组合方式有好几种。进程在后台时，系统判定 ANR 之后直接结束它，不弹窗，这种叫静默 ANR：有事件记录和退出原因，用户什么都没看到。用户点了“等待”之后弹窗消失，进程还活着：有事件记录，暂时没有退出原因。所以“用户没反馈”和“线上没有 ANR”之间不能画等号，统计 ANR 得看后两样。</p>
+<p data-block="15">三样东西的组合方式有好几种。进程在后台时，系统判定 ANR 之后直接结束它，不弹窗，这种叫静默 ANR：有事件记录和退出原因，用户什么都没看到。用户点了“等待”之后弹窗消失，进程还活着：有事件记录，暂时没有退出原因。所以“用户没反馈”和“线上没有 ANR”之间不能画等号，统计 ANR 得看后两样。</p>
 
-<p>events 日志里，一次静默 ANR 前后大概是这样的（字段依次是用户、pid、包名、flags、原因）：</p>
+<p data-block="16">events 日志里，一次静默 ANR 前后大概是这样的（字段依次是用户、pid、包名、flags、原因）：</p>
 
-<div class="code">
+<div data-block="17" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -178,46 +178,46 @@
 <span class="line">am_proc_died: [0,12866,&quot;com.example.shop&quot;,905,5]</span></code></pre>
             </div>
 
-<p>整个过程中屏幕上什么都没发生，线上却多了一条 ANR。</p>
+<p data-block="18">整个过程中屏幕上什么都没发生，线上却多了一条 ANR。</p>
 
-<p>ANR 和崩溃经常被放在一起说，它们的机制差得很远：</p>
+<p data-block="19">ANR 和崩溃经常被放在一起说，它们的机制差得很远：</p>
 
-<div class="table-wrap"><table><caption>崩溃和 ANR 的差别</caption><thead><tr><th></th><th>崩溃</th><th>ANR</th></tr></thead><tbody><tr><td>谁发现的</td><td>应用进程自己，异常没有接住</td><td>系统，某个期限到了</td></tr><tr><td>判定时进程的状态</td><td>已经要退出了</td><td>还活着，可能还在跑</td></tr><tr><td>现场</td><td>异常栈，从抛出点到入口</td><td>所有线程的栈，某一时刻的快照</td></tr><tr><td>分析的入手点</td><td>看异常栈，一般能直接定位</td><td>先弄清是哪个期限，再对时间窗</td></tr></tbody></table></div>
+<div data-block="20" class="table-wrap"><table><caption>崩溃和 ANR 的差别</caption><thead><tr><th></th><th>崩溃</th><th>ANR</th></tr></thead><tbody><tr><td>谁发现的</td><td>应用进程自己，异常没有接住</td><td>系统，某个期限到了</td></tr><tr><td>判定时进程的状态</td><td>已经要退出了</td><td>还活着，可能还在跑</td></tr><tr><td>现场</td><td>异常栈，从抛出点到入口</td><td>所有线程的栈，某一时刻的快照</td></tr><tr><td>分析的入手点</td><td>看异常栈，一般能直接定位</td><td>先弄清是哪个期限，再对时间窗</td></tr></tbody></table></div>
 
-<p>崩溃的那份栈天然带着因果：从异常往上是完整的调用路径。ANR 的栈只是“dump 那一刻各个线程停在哪”，因果要自己拼。这是它难查的根本原因，后文的整套流程都是围着这一点设计的。</p>
+<p data-block="21">崩溃的那份栈天然带着因果：从异常往上是完整的调用路径。ANR 的栈只是“dump 那一刻各个线程停在哪”，因果要自己拼。这是它难查的根本原因，后文的整套流程都是围着这一点设计的。</p>
 
-<p>还有一件事容易忽略：计时的人是系统，应用自己毫不知情。输入事件由 system_server 里的 InputDispatcher 数着秒表，Service 和广播的定时器最终也以消息的形式回到 system_server 的 Handler 上。期限快到的时候不会有任何回调通知你，也没有办法在应用里问一句“我还剩几秒”。应用内那些主线程卡顿监控，靠的是另外的办法去猜，和系统真正用来判定的那把尺子不是一回事。有些卡顿监控一切正常，线上却堆着一批 ANR，原因就在这里。</p>
+<p data-block="22">还有一件事容易忽略：计时的人是系统，应用自己毫不知情。输入事件由 system_server 里的 InputDispatcher 数着秒表，Service 和广播的定时器最终也以消息的形式回到 system_server 的 Handler 上。期限快到的时候不会有任何回调通知你，也没有办法在应用里问一句“我还剩几秒”。应用内那些主线程卡顿监控，靠的是另外的办法去猜，和系统真正用来判定的那把尺子不是一回事。有些卡顿监控一切正常，线上却堆着一批 ANR，原因就在这里。</p>
 
-<h2 id="2">
+<h2 data-block="23" id="2">
               2. 七个定时器
               <a class="anchor" href="#2">链接到此标题</a>
             </h2>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/01-timers.webp" alt="七个定时器：谁在计时，什么算完成" loading="lazy" /></figure>
+<figure data-block="24" class="prose-figure"><img src="/images/android-anr-analysis/01-timers.webp" alt="七个定时器：谁在计时，什么算完成" loading="lazy" /></figure>
 
-<p>图里的七行就是全部入口。每行有四样东西要记住：谁来计时，从哪一刻到哪一刻，期限多长，出了事记在谁头上。后面的小节按这个顺序逐个讲。</p>
+<p data-block="25">图里的七行就是全部入口。每行有四样东西要记住：谁来计时，从哪一刻到哪一刻，期限多长，出了事记在谁头上。后面的小节按这个顺序逐个讲。</p>
 
-<p>先说一个贯穿所有行的细节。这些秒数都是源码里的默认值，运行时还要乘一个系统属性 <code>ro.hw_timeout_multiplier</code>（代码里是 <code>Build.HW_TIMEOUT_MULTIPLIER</code>），默认是 1。硬件比较慢的设备上，厂商可能把它调大，于是同样的代码在一台机器上 5 秒出事，换一台要 7 秒。拿不同机型的日志对时间的时候，记得先确认这个值。</p>
+<p data-block="26">先说一个贯穿所有行的细节。这些秒数都是源码里的默认值，运行时还要乘一个系统属性 <code>ro.hw_timeout_multiplier</code>（代码里是 <code>Build.HW_TIMEOUT_MULTIPLIER</code>），默认是 1。硬件比较慢的设备上，厂商可能把它调大，于是同样的代码在一台机器上 5 秒出事，换一台要 7 秒。拿不同机型的日志对时间的时候，记得先确认这个值。</p>
 
-<h3 id="2-1-5">2.1 输入分发：5 秒</h3>
+<h3 data-block="27" id="2-1-5">2.1 输入分发：5 秒</h3>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/02-input.webp" alt="输入超时：按事件计时，一个事件一个期限" loading="lazy" /></figure>
+<figure data-block="28" class="prose-figure"><img src="/images/android-anr-analysis/02-input.webp" alt="输入超时：按事件计时，一个事件一个期限" loading="lazy" /></figure>
 
-<p>输入事件由 system_server 里的 InputDispatcher 分发。事件交给应用某条连接的那一刻，分发器会记下它的期限，放进一个按到期时间排序的集合（<code>AnrTracker</code>）；应用处理完这个事件、调用 <code>finishInputEvent</code> 之后，这条记录被拿掉。分发器每次醒来都看一眼最早的那个期限，过期了就判定这条连接无响应。</p>
+<p data-block="29">输入事件由 system_server 里的 InputDispatcher 分发。事件交给应用某条连接的那一刻，分发器会记下它的期限，放进一个按到期时间排序的集合（<code>AnrTracker</code>）；应用处理完这个事件、调用 <code>finishInputEvent</code> 之后，这条记录被拿掉。分发器每次醒来都看一眼最早的那个期限，过期了就判定这条连接无响应。</p>
 
-<p>所以输入超时是按事件计的。图里的 A 是最常见的样子：主线程正在处理这次点击，处理了很久，这个事件迟迟没有 finish，5 秒一到，判定成立。</p>
+<p data-block="30">所以输入超时是按事件计的。图里的 A 是最常见的样子：主线程正在处理这次点击，处理了很久，这个事件迟迟没有 finish，5 秒一到，判定成立。</p>
 
-<p>“处理完”的判定比直觉要晚一点。事件到了应用这边，要在 <code>ViewRootImpl</code> 里依次经过若干个 <code>InputStage</code>。和业务代码有关的那一级叫 <code>ViewPostImeInputStage</code>，它把事件分发给整棵 View 树，<code>onTouchEvent()</code>、<code>onClick()</code> 都在这一级里执行。全部走完，最后一级才调用 <code>finishInputEvent()</code>，通知分发器这个事件结束了。<code>onClick()</code> 里的同步请求、耗时计算，都算在这个事件的“处理时间”里。</p>
+<p data-block="31">“处理完”的判定比直觉要晚一点。事件到了应用这边，要在 <code>ViewRootImpl</code> 里依次经过若干个 <code>InputStage</code>。和业务代码有关的那一级叫 <code>ViewPostImeInputStage</code>，它把事件分发给整棵 View 树，<code>onTouchEvent()</code>、<code>onClick()</code> 都在这一级里执行。全部走完，最后一级才调用 <code>finishInputEvent()</code>，通知分发器这个事件结束了。<code>onClick()</code> 里的同步请求、耗时计算，都算在这个事件的“处理时间”里。</p>
 
-<p>判定成立之后，分发器会把这条连接上还在排队的输入事件全部取消，日志里能看到 <code>Canceling events for … because it is unresponsive</code>。应用恢复响应之后，分发器会收到通知，再恢复正常分发。</p>
+<p data-block="32">判定成立之后，分发器会把这条连接上还在排队的输入事件全部取消，日志里能看到 <code>Canceling events for … because it is unresponsive</code>。应用恢复响应之后，分发器会收到通知，再恢复正常分发。</p>
 
-<p>图里的 B 是另一回事，也是开头那张工单容易走偏的地方。主线程被一条别的消息占住了，这段时间用户没有碰屏幕，那么此刻没有任何事件在等 finish，<code>AnrTracker</code> 是空的，分发器不会做任何判定。用户觉得界面已经死了，弹窗却迟迟不出现。直到他忍不住点了一下，新的事件排到后面，从这一下开始数 5 秒，弹窗才出来。“卡死了但一碰才弹”，说的就是它。</p>
+<p data-block="33">图里的 B 是另一回事，也是开头那张工单容易走偏的地方。主线程被一条别的消息占住了，这段时间用户没有碰屏幕，那么此刻没有任何事件在等 finish，<code>AnrTracker</code> 是空的，分发器不会做任何判定。用户觉得界面已经死了，弹窗却迟迟不出现。直到他忍不住点了一下，新的事件排到后面，从这一下开始数 5 秒，弹窗才出来。“卡死了但一碰才弹”，说的就是它。</p>
 
-<p>反过来也成立：没有输入事件的时候，主线程卡多久都不会触发输入 ANR。一个页面在 <code>onCreate()</code> 里做了 30 秒的事，只要用户在这 30 秒里不碰它，系统不会有任何表示，启动画面一直挂着而已。AOSP 没有给 Activity 的生命周期回调单独设过定时器。</p>
+<p data-block="34">反过来也成立：没有输入事件的时候，主线程卡多久都不会触发输入 ANR。一个页面在 <code>onCreate()</code> 里做了 30 秒的事，只要用户在这 30 秒里不碰它，系统不会有任何表示，启动画面一直挂着而已。AOSP 没有给 Activity 的生命周期回调单独设过定时器。</p>
 
-<p>Reason 的写法有好几年没变过：从 Android 11 到 16，<code>InputDispatcher.cpp</code> 里都是下面这一句。窗口无响应时是这样：</p>
+<p data-block="35">Reason 的写法有好几年没变过：从 Android 11 到 16，<code>InputDispatcher.cpp</code> 里都是下面这一句。窗口无响应时是这样：</p>
 
-<div class="code">
+<div data-block="36" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -229,27 +229,27 @@
 <span class="line">       Waited 5002ms for MotionEvent(action=ACTION_UP, deviceId=3, source=0x1002)</span></code></pre>
             </div>
 
-<p><code>Waited</code> 后面的毫秒数、事件的类型，都在这一行里，排查时先看它。另一种情况是应用已经获得焦点，却还没有可用的焦点窗口，比如正在切换页面的时候用户点了下去，这时 Reason 是 <code>xxx does not have a focused window</code>。</p>
+<p data-block="37"><code>Waited</code> 后面的毫秒数、事件的类型，都在这一行里，排查时先看它。另一种情况是应用已经获得焦点，却还没有可用的焦点窗口，比如正在切换页面的时候用户点了下去，这时 Reason 是 <code>xxx does not have a focused window</code>。</p>
 
-<p>还有两个例外。进程正在被调试器附加时，系统收到超时通知后会告诉分发器“稍后再查”，于是一直搁置下去，挂着调试器是等不到输入 ANR 的。正在跑 instrumentation、或者用 wrapper 方式启动的进程，期限放宽到 60 秒。</p>
+<p data-block="38">还有两个例外。进程正在被调试器附加时，系统收到超时通知后会告诉分发器“稍后再查”，于是一直搁置下去，挂着调试器是等不到输入 ANR 的。正在跑 instrumentation、或者用 wrapper 方式启动的进程，期限放宽到 60 秒。</p>
 
-<h3 id="2-2-service-20-200">2.2 Service 回调：20 秒，后台 200 秒</h3>
+<h3 data-block="39" id="2-2-service-20-200">2.2 Service 回调：20 秒，后台 200 秒</h3>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/03-service.webp" alt="Service 的两个定时器" loading="lazy" /></figure>
+<figure data-block="40" class="prose-figure"><img src="/images/android-anr-analysis/03-service.webp" alt="Service 的两个定时器" loading="lazy" /></figure>
 
-<p>关于 Service 的 20 秒，流传最广的一种说法是“<code>startService()</code> 之后不调 <code>stopSelf()</code> 就会 ANR”。源码里不是这样。</p>
+<p data-block="41">关于 Service 的 20 秒，流传最广的一种说法是“<code>startService()</code> 之后不调 <code>stopSelf()</code> 就会 ANR”。源码里不是这样。</p>
 
-<p>系统每调度一次回调，就把这个 Service 的执行计数加一（<code>bumpServiceExecutingLocked</code>）；进程里第一次出现“执行中”的 Service 时，启动定时器。应用这边回调返回后，会主动向系统报告一次完成（<code>serviceDoneExecuting</code>），计数减一；进程里的执行计数归零时，定时器被取消。</p>
+<p data-block="42">系统每调度一次回调，就把这个 Service 的执行计数加一（<code>bumpServiceExecutingLocked</code>）；进程里第一次出现“执行中”的 Service 时，启动定时器。应用这边回调返回后，会主动向系统报告一次完成（<code>serviceDoneExecuting</code>），计数减一；进程里的执行计数归零时，定时器被取消。</p>
 
-<p>也就是说，20 秒量的是一次回调从派发到返回。<code>onStartCommand()</code> 把活交给子线程然后马上返回，哪怕这个 Service 之后运行一整天，也不会有 Service ANR。反过来，<code>onStartCommand()</code> 在主线程上同步做了 21 秒的事，就算结尾调了 <code>stopSelf()</code>，该 ANR 还是 ANR。</p>
+<p data-block="43">也就是说，20 秒量的是一次回调从派发到返回。<code>onStartCommand()</code> 把活交给子线程然后马上返回，哪怕这个 Service 之后运行一整天，也不会有 Service ANR。反过来，<code>onStartCommand()</code> 在主线程上同步做了 21 秒的事，就算结尾调了 <code>stopSelf()</code>，该 ANR 还是 ANR。</p>
 
-<p>被计时的回调有下面这些，每个各算一次：</p>
+<p data-block="44">被计时的回调有下面这些，每个各算一次：</p>
 
-<div class="table-wrap"><table><caption>Service 里被计时的回调</caption><thead><tr><th>回调</th><th>系统何时开始计时</th><th>系统何时认为完成</th></tr></thead><tbody><tr><td><code>onCreate()</code></td><td>调度创建这个 Service</td><td>应用报告 <code>onCreate()</code> 返回</td></tr><tr><td><code>onStartCommand()</code></td><td>派发每一次启动</td><td><code>onStartCommand()</code> 返回，且排队中的写盘已完成</td></tr><tr><td><code>onBind()</code> / <code>onRebind()</code></td><td>请求绑定</td><td>应用发布 Binder，系统转交给客户端</td></tr><tr><td><code>onUnbind()</code></td><td>通知解绑</td><td>应用处理完解绑</td></tr><tr><td><code>onDestroy()</code></td><td>决定销毁</td><td><code>onDestroy()</code> 返回，且排队中的写盘已完成</td></tr></tbody></table></div>
+<div data-block="45" class="table-wrap"><table><caption>Service 里被计时的回调</caption><thead><tr><th>回调</th><th>系统何时开始计时</th><th>系统何时认为完成</th></tr></thead><tbody><tr><td><code>onCreate()</code></td><td>调度创建这个 Service</td><td>应用报告 <code>onCreate()</code> 返回</td></tr><tr><td><code>onStartCommand()</code></td><td>派发每一次启动</td><td><code>onStartCommand()</code> 返回，且排队中的写盘已完成</td></tr><tr><td><code>onBind()</code> / <code>onRebind()</code></td><td>请求绑定</td><td>应用发布 Binder，系统转交给客户端</td></tr><tr><td><code>onUnbind()</code></td><td>通知解绑</td><td>应用处理完解绑</td></tr><tr><td><code>onDestroy()</code></td><td>决定销毁</td><td><code>onDestroy()</code> 返回，且排队中的写盘已完成</td></tr></tbody></table></div>
 
-<p>表里有两行出现了“排队中的写盘”，对应左图里那一段 <code>QueuedWork.waitToFinish()</code>。它在 <code>onStartCommand()</code> 返回之后、向系统报告完成之前执行，等的是 <code>SharedPreferences.apply()</code> 排队的写盘。<code>apply()</code> 的卖点是异步，但框架在 <code>onStartCommand()</code>、<code>onDestroy()</code>，以及 Activity 的 <code>onPause()</code>、<code>onStop()</code> 结束前，会把积压的写盘同步等完。配置文件比较大、又恰好在回调里改了好几处的应用，栽在这一步上的相当多。栈顶停在 <code>onStartCommand()</code> 已经返回之后的位置，很容易看漏。</p>
+<p data-block="46">表里有两行出现了“排队中的写盘”，对应左图里那一段 <code>QueuedWork.waitToFinish()</code>。它在 <code>onStartCommand()</code> 返回之后、向系统报告完成之前执行，等的是 <code>SharedPreferences.apply()</code> 排队的写盘。<code>apply()</code> 的卖点是异步，但框架在 <code>onStartCommand()</code>、<code>onDestroy()</code>，以及 Activity 的 <code>onPause()</code>、<code>onStop()</code> 结束前，会把积压的写盘同步等完。配置文件比较大、又恰好在回调里改了好几处的应用，栽在这一步上的相当多。栈顶停在 <code>onStartCommand()</code> 已经返回之后的位置，很容易看漏。</p>
 
-<div class="code">
+<div data-block="47" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -267,13 +267,13 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>这个例子里，<code>tick()</code> 的时长和随后那次写盘的时长，都落在同一个 20 秒的区间里。</p>
+<p data-block="48">这个例子里，<code>tick()</code> 的时长和随后那次写盘的时长，都落在同一个 20 秒的区间里。</p>
 
-<p>时限的长短看这次回调登记的是前台还是后台属性，前台 20 秒，后台 200 秒。定时器在进程 attach 之后才启动，fork 和启动进程的耗时不在区间内。它按进程共用一把，同一个进程里几个 Service 的回调叠在一起计时。</p>
+<p data-block="49">时限的长短看这次回调登记的是前台还是后台属性，前台 20 秒，后台 200 秒。定时器在进程 attach 之后才启动，fork 和启动进程的耗时不在区间内。它按进程共用一把，同一个进程里几个 Service 的回调叠在一起计时。</p>
 
-<p>超时的 Reason 长这样：</p>
+<p data-block="50">超时的 Reason 长这样：</p>
 
-<div class="code">
+<div data-block="51" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -284,15 +284,15 @@
               <pre><code><span class="line">Reason: executing service com.example.shop/.SyncService, waited 20003ms</span></code></pre>
             </div>
 
-<p>主日志里在它前面还有一行 <code>Timeout executing service: …</code>，后面跟着这个 Service 的完整状态。现场还在的话，<code>adb shell dumpsys activity services</code> 的输出开头会保留最近一次超时的 Service。</p>
+<p data-block="52">主日志里在它前面还有一行 <code>Timeout executing service: …</code>，后面跟着这个 Service 的完整状态。现场还在的话，<code>adb shell dumpsys activity services</code> 的输出开头会保留最近一次超时的 Service。</p>
 
-<h3 id="2-3-startforegroundservice-30-10">2.3 startForegroundService()：30 秒，再加 10 秒</h3>
+<h3 data-block="53" id="2-3-startforegroundservice-30-10">2.3 startForegroundService()：30 秒，再加 10 秒</h3>
 
-<p>同一张图的右半边。</p>
+<p data-block="54">同一张图的右半边。</p>
 
-<p>用 <code>startForegroundService()</code> 启动的 Service 带着一个标记：必须在期限内调用 <code>startForeground()</code>。系统把启动命令派给应用时开始计时，30 秒内没有等到这个调用，系统先把这个 Service 停掉，再过 10 秒，正式报 ANR。Reason 是一句完整的话：</p>
+<p data-block="55">用 <code>startForegroundService()</code> 启动的 Service 带着一个标记：必须在期限内调用 <code>startForeground()</code>。系统把启动命令派给应用时开始计时，30 秒内没有等到这个调用，系统先把这个 Service 停掉，再过 10 秒，正式报 ANR。Reason 是一句完整的话：</p>
 
-<div class="code">
+<div data-block="56" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -303,19 +303,19 @@
               <pre><code><span class="line">Reason: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{... u0 com.example.shop/.UploadService}</span></code></pre>
             </div>
 
-<p>这 30 秒和 2.2 的 20 秒是两回事，互不影响。调了 <code>startForeground()</code> 只兑现了前台的承诺，<code>onStartCommand()</code> 本身仍然要在 20 秒内返回。</p>
+<p data-block="57">这 30 秒和 2.2 的 20 秒是两回事，互不影响。调了 <code>startForeground()</code> 只兑现了前台的承诺，<code>onStartCommand()</code> 本身仍然要在 20 秒内返回。</p>
 
-<p>右图最下面还有一条分支：30 秒内应用自己把这个 Service 停掉了。此时“必须前台”的标记还没兑现，系统的处理是抛出 <code>ForegroundServiceDidNotStartInTimeException</code>。这是崩溃，不是 ANR，崩溃栈里通常能看到当初调用 <code>startForegroundService()</code> 的位置。</p>
+<p data-block="58">右图最下面还有一条分支：30 秒内应用自己把这个 Service 停掉了。此时“必须前台”的标记还没兑现，系统的处理是抛出 <code>ForegroundServiceDidNotStartInTimeException</code>。这是崩溃，不是 ANR，崩溃栈里通常能看到当初调用 <code>startForegroundService()</code> 的位置。</p>
 
-<h3 id="2-4-10-60">2.4 广播接收：10 秒，后台 60 秒</h3>
+<h3 data-block="59" id="2-4-10-60">2.4 广播接收：10 秒，后台 60 秒</h3>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/04-broadcast.webp" alt="广播超时：从派发到 finishReceiver()" loading="lazy" /></figure>
+<figure data-block="60" class="prose-figure"><img src="/images/android-anr-analysis/04-broadcast.webp" alt="广播超时：从派发到 finishReceiver()" loading="lazy" /></figure>
 
-<p>广播的计时从派发给某一个接收器开始，到系统收到 <code>finishReceiver()</code> 为止。<code>onReceive()</code> 正常返回，框架会替你调用 <code>PendingResult.finish()</code>，计时结束，这是图里的 A。如果在 <code>onReceive()</code> 里调了 <code>goAsync()</code>，返回之后框架不再代劳，计时一直持续到你手里那个 <code>PendingResult</code> 被显式 <code>finish()</code>，这是图里的 B。</p>
+<p data-block="61">广播的计时从派发给某一个接收器开始，到系统收到 <code>finishReceiver()</code> 为止。<code>onReceive()</code> 正常返回，框架会替你调用 <code>PendingResult.finish()</code>，计时结束，这是图里的 A。如果在 <code>onReceive()</code> 里调了 <code>goAsync()</code>，返回之后框架不再代劳，计时一直持续到你手里那个 <code>PendingResult</code> 被显式 <code>finish()</code>，这是图里的 B。</p>
 
-<p>B 是广播 ANR 里最典型的一种。主线程早就空闲了，某个后台任务迟迟不结束，也没人记得 finish：</p>
+<p data-block="62">B 是广播 ANR 里最典型的一种。主线程早就空闲了，某个后台任务迟迟不结束，也没人记得 finish：</p>
 
-<div class="code">
+<div data-block="63" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -332,9 +332,9 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>有两类接收器不参与计时。无序广播发给动态注册的接收器时，系统直接当作送达；另外少数几条系统广播被标记成了豁免，比如 <code>ACTION_PRE_BOOT_COMPLETED</code>。所以日志里看到的广播 ANR，Reason 要么是静态注册的接收器，要么是有序广播：</p>
+<p data-block="64">有两类接收器不参与计时。无序广播发给动态注册的接收器时，系统直接当作送达；另外少数几条系统广播被标记成了豁免，比如 <code>ACTION_PRE_BOOT_COMPLETED</code>。所以日志里看到的广播 ANR，Reason 要么是静态注册的接收器，要么是有序广播：</p>
 
-<div class="code">
+<div data-block="65" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -345,45 +345,45 @@
               <pre><code><span class="line">Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED flg=0x900000 cmp=com.example.shop/.BootReceiver }</span></code></pre>
             </div>
 
-<p>软超时和硬超时之间有一次宽限。10 秒到点时，系统会看这个进程在这段时间里是不是“可以运行、却一直没排上 CPU”。如果是，就按被耽误的时长再宽限一次，上限同样是 10 秒，之后才正式判定。整机负载很高的时候，同一个广播的超时可能拖到十几秒才出现在日志里。</p>
+<p data-block="66">软超时和硬超时之间有一次宽限。10 秒到点时，系统会看这个进程在这段时间里是不是“可以运行、却一直没排上 CPU”。如果是，就按被耽误的时长再宽限一次，上限同样是 10 秒，之后才正式判定。整机负载很高的时候，同一个广播的超时可能拖到十几秒才出现在日志里。</p>
 
-<p>广播 ANR 的 Reason 经常带有误导性。它只说明这个定时器先到点了。开机完成时系统一口气发出几十条广播，每一条都要经过主线程；主线程被其中某一条的初始化拖住，后面那些只能排队，先到期的那个成了 Reason。真正的根因在它前面那条消息里，第 6.4 节有一个这样的例子。</p>
+<p data-block="67">广播 ANR 的 Reason 经常带有误导性。它只说明这个定时器先到点了。开机完成时系统一口气发出几十条广播，每一条都要经过主线程；主线程被其中某一条的初始化拖住，后面那些只能排队，先到期的那个成了 Reason。真正的根因在它前面那条消息里，第 6.4 节有一个这样的例子。</p>
 
-<h3 id="2-5-contentprovider-10-anr">2.5 ContentProvider：10 秒的发布期限，和一条由调用方掌握的 ANR</h3>
+<h3 data-block="68" id="2-5-contentprovider-10-anr">2.5 ContentProvider：10 秒的发布期限，和一条由调用方掌握的 ANR</h3>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/05-provider.webp" alt="Provider 的超时：一条结束进程，一条由调用方掌握" loading="lazy" /></figure>
+<figure data-block="69" class="prose-figure"><img src="/images/android-anr-analysis/05-provider.webp" alt="Provider 的超时：一条结束进程，一条由调用方掌握" loading="lazy" /></figure>
 
-<p>Provider 这一块最容易读错，因为它有三条互不相同的路径，牵涉三个进程。</p>
+<p data-block="70">Provider 这一块最容易读错，因为它有三条互不相同的路径，牵涉三个进程。</p>
 
-<p><strong>发布期限，10 秒，到期是结束进程。</strong> 客户端进程向 system_server 要一个 Provider，宿主进程还没起来的话，system_server 先把它拉起来。宿主 attach 之后，系统给它 10 秒的发布期限；10 秒内没有调用 <code>publishContentProviders()</code>，系统直接结束宿主进程。这一次不是 ANR，退出原因是 <code>REASON_INITIALIZATION_FAILURE</code>，杀进程的理由是 <code>timeout publishing content providers</code>。</p>
+<p data-block="71"><strong>发布期限，10 秒，到期是结束进程。</strong> 客户端进程向 system_server 要一个 Provider，宿主进程还没起来的话，system_server 先把它拉起来。宿主 attach 之后，系统给它 10 秒的发布期限；10 秒内没有调用 <code>publishContentProviders()</code>，系统直接结束宿主进程。这一次不是 ANR，退出原因是 <code>REASON_INITIALIZATION_FAILURE</code>，杀进程的理由是 <code>timeout publishing content providers</code>。</p>
 
-<p><strong>等待期限，20 秒，到期是客户端不再等。</strong> 客户端这边另有一条 20 秒的期限，从它发起请求时算起，包含宿主进程启动的时间。等不到 Provider 发布，系统通知客户端“没发布”，客户端的 <code>acquireProvider()</code> 不再等待，拿到的是空，随后通常是一次 <code>Unknown URL</code> 开头的异常，应用自己的日志里会多一行 <code>Failed to find provider info for &lt;authority&gt;</code>。这一步本身不产生 ANR，系统日志里只会多一句 <code>Timeout waiting for provider … caller=&lt;客户端&gt;</code>。但客户端的主线程已经白等了 20 秒，只要用户在这期间碰过屏幕，客户端自己就会先来一次输入 ANR。</p>
+<p data-block="72"><strong>等待期限，20 秒，到期是客户端不再等。</strong> 客户端这边另有一条 20 秒的期限，从它发起请求时算起，包含宿主进程启动的时间。等不到 Provider 发布，系统通知客户端“没发布”，客户端的 <code>acquireProvider()</code> 不再等待，拿到的是空，随后通常是一次 <code>Unknown URL</code> 开头的异常，应用自己的日志里会多一行 <code>Failed to find provider info for &lt;authority&gt;</code>。这一步本身不产生 ANR，系统日志里只会多一句 <code>Timeout waiting for provider … caller=&lt;客户端&gt;</code>。但客户端的主线程已经白等了 20 秒，只要用户在这期间碰过屏幕，客户端自己就会先来一次输入 ANR。</p>
 
-<p>两个期限的起点不同，先后顺序取决于宿主启动花多久。启动很快、卡在 Provider 的 <code>onCreate()</code> 里，先到的是 10 秒那一档，宿主被结束。启动本身就慢，先到的往往是 20 秒那一档，客户端拿着空结果往下走，宿主随后再被结束。</p>
+<p data-block="73">两个期限的起点不同，先后顺序取决于宿主启动花多久。启动很快、卡在 Provider 的 <code>onCreate()</code> 里，先到的是 10 秒那一档，宿主被结束。启动本身就慢，先到的往往是 20 秒那一档，客户端拿着空结果往下走，宿主随后再被结束。</p>
 
-<p><strong><code>ContentProvider not responding</code>，来自调用方打开的一个开关。</strong> 这个 Reason 对应的 ANR，和上面两个期限都没有关系。调用方拿到 <code>ContentProviderClient</code> 之后，可以调 <code>setDetectNotResponding(时长)</code> 打开无响应检测；此后每一次调用超过设定的时长，调用方就会把 Provider 所在的进程报上去，系统判它 ANR。这个接口是 SystemApi，还要求 <code>REMOVE_TASKS</code> 权限，普通应用用不了。所以在自己的日志里看到这个 Reason，说明调用方是一个系统组件，或者 system_server 自己。</p>
+<p data-block="74"><strong><code>ContentProvider not responding</code>，来自调用方打开的一个开关。</strong> 这个 Reason 对应的 ANR，和上面两个期限都没有关系。调用方拿到 <code>ContentProviderClient</code> 之后，可以调 <code>setDetectNotResponding(时长)</code> 打开无响应检测；此后每一次调用超过设定的时长，调用方就会把 Provider 所在的进程报上去，系统判它 ANR。这个接口是 SystemApi，还要求 <code>REMOVE_TASKS</code> 权限，普通应用用不了。所以在自己的日志里看到这个 Reason，说明调用方是一个系统组件，或者 system_server 自己。</p>
 
-<p>排查它的时候，宿主进程里要看的是名字以 <code>binder:</code> 开头的线程：它们在处理调用方发来的请求。第 6.5 节有一个例子。</p>
+<p data-block="75">排查它的时候，宿主进程里要看的是名字以 <code>binder:</code> 开头的线程：它们在处理调用方发来的请求。第 6.5 节有一个例子。</p>
 
-<h3 id="2-6-15">2.6 进程启动：15 秒</h3>
+<h3 data-block="76" id="2-6-15">2.6 进程启动：15 秒</h3>
 
-<p>Android 15 给 system_server 加了一个新的期限。<code>bindApplication</code> 下发给新进程之后开始计时，15 秒内没有等到进程调用 <code>finishAttachApplication()</code>，就会报一次 ANR，Reason 是 <code>Process … failed to complete startup</code>。这个调用发生在应用 <code>handleBindApplication()</code> 的末尾，所以它量的是这个方法的全程：安装所有 ContentProvider、跑完 <code>Application.onCreate()</code>。它同样有广播那样的软、硬两段。</p>
+<p data-block="77">Android 15 给 system_server 加了一个新的期限。<code>bindApplication</code> 下发给新进程之后开始计时，15 秒内没有等到进程调用 <code>finishAttachApplication()</code>，就会报一次 ANR，Reason 是 <code>Process … failed to complete startup</code>。这个调用发生在应用 <code>handleBindApplication()</code> 的末尾，所以它量的是这个方法的全程：安装所有 ContentProvider、跑完 <code>Application.onCreate()</code>。它同样有广播那样的软、硬两段。</p>
 
-<p>Android 14 及之前的版本里没有这个定时器，启动再慢也只是慢。</p>
+<p data-block="78">Android 14 及之前的版本里没有这个定时器，启动再慢也只是慢。</p>
 
-<h3 id="2-7">2.7 被跳过和被放宽的情况</h3>
+<h3 data-block="79" id="2-7">2.7 被跳过和被放宽的情况</h3>
 
-<p>把前面散落的例外集中列一下，对照日志时省得回头翻：</p>
+<p data-block="80">把前面散落的例外集中列一下，对照日志时省得回头翻：</p>
 
-<div class="table-wrap"><table><caption>定时器被跳过或放宽的几种情况</caption><thead><tr><th>情况</th><th>结果</th><th>适用于</th></tr></thead><tbody><tr><td>进程正被调试器附加</td><td>不判 ANR</td><td>全部</td></tr><tr><td>进程在跑 instrumentation，或以 wrapper 启动</td><td>输入超时放宽到 60 秒</td><td>输入</td></tr><tr><td>系统正在关机</td><td>不判 ANR</td><td>全部</td></tr><tr><td>同一进程的 ANR 已经在处理或排队</td><td>后来者直接丢弃</td><td>全部</td></tr><tr><td>进程已被冻结或等待冻结</td><td>部分 Service 回调的定时器推迟到解冻后</td><td>Service</td></tr><tr><td>进程可运行，但没排上 CPU</td><td>软超时之后再宽限一次</td><td>广播、进程启动</td></tr><tr><td><code>ro.hw_timeout_multiplier</code> 大于 1</td><td>所有时限等比例放大</td><td>全部</td></tr></tbody></table></div>
+<div data-block="81" class="table-wrap"><table><caption>定时器被跳过或放宽的几种情况</caption><thead><tr><th>情况</th><th>结果</th><th>适用于</th></tr></thead><tbody><tr><td>进程正被调试器附加</td><td>不判 ANR</td><td>全部</td></tr><tr><td>进程在跑 instrumentation，或以 wrapper 启动</td><td>输入超时放宽到 60 秒</td><td>输入</td></tr><tr><td>系统正在关机</td><td>不判 ANR</td><td>全部</td></tr><tr><td>同一进程的 ANR 已经在处理或排队</td><td>后来者直接丢弃</td><td>全部</td></tr><tr><td>进程已被冻结或等待冻结</td><td>部分 Service 回调的定时器推迟到解冻后</td><td>Service</td></tr><tr><td>进程可运行，但没排上 CPU</td><td>软超时之后再宽限一次</td><td>广播、进程启动</td></tr><tr><td><code>ro.hw_timeout_multiplier</code> 大于 1</td><td>所有时限等比例放大</td><td>全部</td></tr></tbody></table></div>
 
-<p>最后一行的意思是，某些机型上的秒数比图里的大，对照的时候不要照着 5、10、20 去卡。</p>
+<p data-block="82">最后一行的意思是，某些机型上的秒数比图里的大，对照的时候不要照着 5、10、20 去卡。</p>
 
-<h3 id="2-8">2.8 按源码推演，自己触发一遍</h3>
+<h3 data-block="83" id="2-8">2.8 按源码推演，自己触发一遍</h3>
 
-<p>读源码得来的结论，最好亲手验证一次。下面几段代码是我按上面各节的计时规则写出来的，预期现象写在每一段后面。它们没有在真机上跑过，机型和系统版本不同，现象可能有出入；真跑出来和预期不一样，以真机为准。</p>
+<p data-block="84">读源码得来的结论，最好亲手验证一次。下面几段代码是我按上面各节的计时规则写出来的，预期现象写在每一段后面。它们没有在真机上跑过，机型和系统版本不同，现象可能有出入；真跑出来和预期不一样，以真机为准。</p>
 
-<div class="code">
+<div data-block="85" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -417,42 +417,42 @@
 <span class="line">ContextCompat<span class="tok-prop">.startForegroundService</span>(context, <span class="tok-fn">Intent</span>(context, ForgetfulService:<span class="tok-prop">:class</span><span class="tok-prop">.java</span>))</span></code></pre>
             </div>
 
-<p>第 1 段：点一下按钮，手离开屏幕。5 秒多一点之后弹窗出现，Reason 里有 <code>is not responding. Waited 5</code> 开头的一串。</p>
+<p data-block="86">第 1 段：点一下按钮，手离开屏幕。5 秒多一点之后弹窗出现，Reason 里有 <code>is not responding. Waited 5</code> 开头的一串。</p>
 
-<p>第 2 段：应用在前台时调用 <code>startService()</code> 启动它。约 20 秒后 Reason 是 <code>executing service …/.SlowService, waited 200xxms</code>。</p>
+<p data-block="87">第 2 段：应用在前台时调用 <code>startService()</code> 启动它。约 20 秒后 Reason 是 <code>executing service …/.SlowService, waited 200xxms</code>。</p>
 
-<p>第 3 段：约 10 秒后 Reason 是 <code>Broadcast of Intent { … cmp=…/.SlowReceiver }</code>。</p>
+<p data-block="88">第 3 段：约 10 秒后 Reason 是 <code>Broadcast of Intent { … cmp=…/.SlowReceiver }</code>。</p>
 
-<p>第 4 段（Android 13 及以后）：30 秒时这个 Service 被停掉，再过 10 秒，Reason 是 <code>Context.startForegroundService() did not then call Service.startForeground()</code>。</p>
+<p data-block="89">第 4 段（Android 13 及以后）：30 秒时这个 Service 被停掉，再过 10 秒，Reason 是 <code>Context.startForegroundService() did not then call Service.startForeground()</code>。</p>
 
-<p>第 2、3 段期间手不要碰屏幕。主线程被占着，一旦有输入事件在等，5 秒的输入超时会先到，Reason 就换成输入那一行了。这本身也是一个佐证：几个定时器同时在走的时候，先到期的那个决定 Reason 的内容。</p>
+<p data-block="90">第 2、3 段期间手不要碰屏幕。主线程被占着，一旦有输入事件在等，5 秒的输入超时会先到，Reason 就换成输入那一行了。这本身也是一个佐证：几个定时器同时在走的时候，先到期的那个决定 Reason 的内容。</p>
 
-<p>Android 15 及以后的设备上，还可以在 <code>Application.onCreate()</code> 里睡 16 秒，验证进程启动的期限。</p>
+<p data-block="91">Android 15 及以后的设备上，还可以在 <code>Application.onCreate()</code> 里睡 16 秒，验证进程启动的期限。</p>
 
-<h2 id="3-system-server">
+<h2 data-block="92" id="3-system-server">
               3. 超时之后，system_server 做了什么
               <a class="anchor" href="#3-system-server">链接到此标题</a>
             </h2>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/06-pipeline.webp" alt="超时之后：system_server 里的一条流水线" loading="lazy" /></figure>
+<figure data-block="93" class="prose-figure"><img src="/images/android-anr-analysis/06-pipeline.webp" alt="超时之后：system_server 里的一条流水线" loading="lazy" /></figure>
 
-<p>七个定时器的入口各不相同，最后都汇到同一个地方：<code>AnrHelper</code>。它之后的事情决定了现场长什么样，读 trace 之前最好心里有这张图。</p>
+<p data-block="94">七个定时器的入口各不相同，最后都汇到同一个地方：<code>AnrHelper</code>。它之后的事情决定了现场长什么样，读 trace 之前最好心里有这张图。</p>
 
-<p><strong>先对当事进程单独 dump 一次。</strong> <code>AnrHelper</code> 收到报告后，第一件事是开一个线程，只把出事的那个进程的线程栈抓下来，存成一个临时文件。源码注释里的理由很直白：主进程的栈几百毫秒之后就可能过时，而一次完整的 ANR dump 平均要好几秒。所以 trace 文件里第一个进程那一段，通常最接近“卡住那一刻”。</p>
+<p data-block="95"><strong>先对当事进程单独 dump 一次。</strong> <code>AnrHelper</code> 收到报告后，第一件事是开一个线程，只把出事的那个进程的线程栈抓下来，存成一个临时文件。源码注释里的理由很直白：主进程的栈几百毫秒之后就可能过时，而一次完整的 ANR dump 平均要好几秒。所以 trace 文件里第一个进程那一段，通常最接近“卡住那一刻”。</p>
 
-<p><strong>排队的 ANR 串行处理。</strong> 一个专门的线程从队列里一条一条取。某条 ANR 在队列里等了超过 10 秒，系统认为别的进程的栈已经没有参考价值，只 dump 当事进程。开机后 10 分钟内也这样处理，为的是减轻系统负担。看到 trace 里只有应用自己、没有 system_server，先别急着说现场缺失，这多半就是原因。</p>
+<p data-block="96"><strong>排队的 ANR 串行处理。</strong> 一个专门的线程从队列里一条一条取。某条 ANR 在队列里等了超过 10 秒，系统认为别的进程的栈已经没有参考价值，只 dump 当事进程。开机后 10 分钟内也这样处理，为的是减轻系统负担。看到 trace 里只有应用自己、没有 system_server，先别急着说现场缺失，这多半就是原因。</p>
 
-<p><strong>决定 dump 哪些进程。</strong> 当事进程排第一；然后是父进程、system_server、常驻的系统进程；其余进程按 CPU 占用排，有时间才轮到它们。</p>
+<p data-block="97"><strong>决定 dump 哪些进程。</strong> 当事进程排第一；然后是父进程、system_server、常驻的系统进程；其余进程按 CPU 占用排，有时间才轮到它们。</p>
 
-<p><strong>整份 dump 有 20 秒预算。</strong> 超出预算就地中止，日志里会留下 <code>Aborting stack trace dump … deadline exceeded</code>。进程多、机器慢的时候，文件末尾的那些进程可能根本没有被 dump。</p>
+<p data-block="98"><strong>整份 dump 有 20 秒预算。</strong> 超出预算就地中止，日志里会留下 <code>Aborting stack trace dump … deadline exceeded</code>。进程多、机器慢的时候，文件末尾的那些进程可能根本没有被 dump。</p>
 
-<p><strong>分叉。</strong> 系统看这个进程对用户是否“值得关心”：有可见的界面，或者有前台服务在运行，就弹窗；两者都没有，直接结束进程，杀进程的理由是 <code>bg anr</code>。弹窗上点“关闭应用”，进程结束，退出原因是 <code>REASON_ANR</code>；点“等待”，进程继续运行，如果它是输入类 ANR 而且仍然没有响应，过一会儿弹窗会再出现。</p>
+<p data-block="99"><strong>分叉。</strong> 系统看这个进程对用户是否“值得关心”：有可见的界面，或者有前台服务在运行，就弹窗；两者都没有，直接结束进程，杀进程的理由是 <code>bg anr</code>。弹窗上点“关闭应用”，进程结束，退出原因是 <code>REASON_ANR</code>；点“等待”，进程继续运行，如果它是输入类 ANR 而且仍然没有响应，过一会儿弹窗会再出现。</p>
 
-<p>静默 ANR 要再强调一次。有前台服务的后台进程不算静默，会弹窗；剩下的后台进程被直接杀掉，用户和测试都看不到。它们只出现在 <code>am_anr</code> 日志和 <code>ApplicationExitInfo</code> 里，是线上统计最容易漏掉的一块。</p>
+<p data-block="100">静默 ANR 要再强调一次。有前台服务的后台进程不算静默，会弹窗；剩下的后台进程被直接杀掉，用户和测试都看不到。它们只出现在 <code>am_anr</code> 日志和 <code>ApplicationExitInfo</code> 里，是线上统计最容易漏掉的一块。</p>
 
-<p>一次 Service 超时，在主日志里留下的记录大致按这个顺序出现：</p>
+<p data-block="101">一次 Service 超时，在主日志里留下的记录大致按这个顺序出现：</p>
 
-<div class="code">
+<div data-block="102" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -473,22 +473,22 @@
 <span class="line">ActivityManager: CPU usage from 24ms ago: 62% 12866/com.example.shop: 48% user + 13% kernel ...</span></code></pre>
             </div>
 
-<p>有两处顺序值得留意。<code>ANR in</code> 那几行是 dump 结束之后才打印的，而 events 日志里的 <code>am_anr</code> 在 dump 开始之前就写了，两边的时间戳对不上是正常的。<code>Collecting stacks for pid 1873</code> 那一行里的 1873 是 system_server，它通常是被 dump 的第二个进程。</p>
+<p data-block="103">有两处顺序值得留意。<code>ANR in</code> 那几行是 dump 结束之后才打印的，而 events 日志里的 <code>am_anr</code> 在 dump 开始之前就写了，两边的时间戳对不上是正常的。<code>Collecting stacks for pid 1873</code> 那一行里的 1873 是 system_server，它通常是被 dump 的第二个进程。</p>
 
-<p><code>ErrorId</code> 只在系统正开着 trace 时才会生成。同一个编号会写进当时的 Perfetto 记录，两边可以互相对上；平时抓的日志里没有这一行。<code>CPU usage</code> 那一段是判定前后整机在忙什么，第 5 节会用到它。</p>
+<p data-block="104"><code>ErrorId</code> 只在系统正开着 trace 时才会生成。同一个编号会写进当时的 Perfetto 记录，两边可以互相对上；平时抓的日志里没有这一行。<code>CPU usage</code> 那一段是判定前后整机在忙什么，第 5 节会用到它。</p>
 
-<h2 id="4">
+<h2 data-block="105" id="4">
               4. 现场有哪些材料，怎么拿
               <a class="anchor" href="#4">链接到此标题</a>
             </h2>
 
-<p>一次 ANR 会留下五处痕迹。它们的内容有重叠，可得性差别很大，按手头的权限挑着拿。</p>
+<p data-block="106">一次 ANR 会留下五处痕迹。它们的内容有重叠，可得性差别很大，按手头的权限挑着拿。</p>
 
-<div class="table-wrap"><table><caption>ANR 留下的五处痕迹</caption><thead><tr><th>材料</th><th>在哪</th><th>怎么拿</th><th>适合看什么</th></tr></thead><tbody><tr><td>主日志</td><td>logcat 的 main 缓冲区</td><td><code>adb logcat</code></td><td><code>ANR in</code>、<code>PID</code>、<code>Reason</code>、<code>Frozen</code>，外加一段 CPU 占用</td></tr><tr><td>events 日志</td><td>logcat 的 events 缓冲区</td><td><code>adb logcat -b events</code></td><td><code>am_anr</code> 一行一条，连同前后的进程启动和杀进程记录，适合按时间筛</td></tr><tr><td>trace 文件</td><td><code>/data/anr/</code> 目录下，每次一个</td><td>root 或 userdebug 可以直接 pull，否则从 bugreport 里解</td><td>所有被点名进程的线程栈，核心材料</td></tr><tr><td>DropBox</td><td><code>data_app_anr</code>、<code>system_app_anr</code> 这类 tag</td><td><code>adb shell dumpsys dropbox --print data_app_anr</code></td><td>主日志那一段加 trace 的长期存档</td></tr><tr><td>退出记录</td><td>系统保留的最近若干次退出记录</td><td>应用自己调 API 取</td><td>线上场景，进程已经不在了也能拿到本进程那一段 trace</td></tr></tbody></table></div>
+<div data-block="107" class="table-wrap"><table><caption>ANR 留下的五处痕迹</caption><thead><tr><th>材料</th><th>在哪</th><th>怎么拿</th><th>适合看什么</th></tr></thead><tbody><tr><td>主日志</td><td>logcat 的 main 缓冲区</td><td><code>adb logcat</code></td><td><code>ANR in</code>、<code>PID</code>、<code>Reason</code>、<code>Frozen</code>，外加一段 CPU 占用</td></tr><tr><td>events 日志</td><td>logcat 的 events 缓冲区</td><td><code>adb logcat -b events</code></td><td><code>am_anr</code> 一行一条，连同前后的进程启动和杀进程记录，适合按时间筛</td></tr><tr><td>trace 文件</td><td><code>/data/anr/</code> 目录下，每次一个</td><td>root 或 userdebug 可以直接 pull，否则从 bugreport 里解</td><td>所有被点名进程的线程栈，核心材料</td></tr><tr><td>DropBox</td><td><code>data_app_anr</code>、<code>system_app_anr</code> 这类 tag</td><td><code>adb shell dumpsys dropbox --print data_app_anr</code></td><td>主日志那一段加 trace 的长期存档</td></tr><tr><td>退出记录</td><td>系统保留的最近若干次退出记录</td><td>应用自己调 API 取</td><td>线上场景，进程已经不在了也能拿到本进程那一段 trace</td></tr></tbody></table></div>
 
-<p>最后一行对应的是 <code>ApplicationExitInfo</code>，4.1 节会展开。前四种材料对应的命令：</p>
+<p data-block="108">最后一行对应的是 <code>ApplicationExitInfo</code>，4.1 节会展开。前四种材料对应的命令：</p>
 
-<div class="code">
+<div data-block="109" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">BASH</span>
@@ -505,19 +505,19 @@
 <span class="line">adb pull /data/anr/ .                <span class="tok-com"># trace 文件每次一个，默认保留最近 64 个</span></span></code></pre>
             </div>
 
-<p>DropBox 有两个坑。对应 tag 可能被关闭；同一个进程的同类记录还会被限流。查不到记录不能说明没发生过，以 events 日志为准。</p>
+<p data-block="110">DropBox 有两个坑。对应 tag 可能被关闭；同一个进程的同类记录还会被限流。查不到记录不能说明没发生过，以 events 日志为准。</p>
 
-<p>trace 文件的权限是 0600，只有系统读得到。手里没有 root 的时候，<code>adb bugreport</code> 是最省事的办法：导出的压缩包里带着 <code>/data/anr</code> 下的全部文件。</p>
+<p data-block="111">trace 文件的权限是 0600，只有系统读得到。手里没有 root 的时候，<code>adb bugreport</code> 是最省事的办法：导出的压缩包里带着 <code>/data/anr</code> 下的全部文件。</p>
 
-<h3 id="4-1-root">4.1 线上没有 root，怎么拿栈</h3>
+<h3 data-block="112" id="4-1-root">4.1 线上没有 root，怎么拿栈</h3>
 
-<p>线上的 ANR 发生在用户的手机上，上面几条命令都用不了。常见的办法有四种，能拿到的东西和代价各不相同：</p>
+<p data-block="113">线上的 ANR 发生在用户的手机上，上面几条命令都用不了。常见的办法有四种，能拿到的东西和代价各不相同：</p>
 
-<div class="table-wrap"><table><caption>线上取 ANR 信息的四种办法</caption><thead><tr><th>办法</th><th>能拿到什么</th><th>局限</th></tr></thead><tbody><tr><td>下次启动时读系统的退出记录</td><td>系统抓的本进程线程栈，加退出原因</td><td>API 30 起；只有本进程那一段；要等进程再启动</td></tr><tr><td>监听 <code>/data/anr</code> 下文件的变化</td><td>系统写的 trace</td><td>新系统上文件是 0600、名字不固定，普通应用读不到</td></tr><tr><td>接管抓栈用的 <code>SIGQUIT</code> 信号</td><td>ANR 当时本进程的线程栈</td><td>要写一点 native 代码，和系统的抓栈过程抢时间</td></tr><tr><td>主线程看门狗</td><td>主线程卡了多久、卡在哪个方法</td><td>只知道“卡”，不知道系统判的是哪一类</td></tr></tbody></table></div>
+<div data-block="114" class="table-wrap"><table><caption>线上取 ANR 信息的四种办法</caption><thead><tr><th>办法</th><th>能拿到什么</th><th>局限</th></tr></thead><tbody><tr><td>下次启动时读系统的退出记录</td><td>系统抓的本进程线程栈，加退出原因</td><td>API 30 起；只有本进程那一段；要等进程再启动</td></tr><tr><td>监听 <code>/data/anr</code> 下文件的变化</td><td>系统写的 trace</td><td>新系统上文件是 0600、名字不固定，普通应用读不到</td></tr><tr><td>接管抓栈用的 <code>SIGQUIT</code> 信号</td><td>ANR 当时本进程的线程栈</td><td>要写一点 native 代码，和系统的抓栈过程抢时间</td></tr><tr><td>主线程看门狗</td><td>主线程卡了多久、卡在哪个方法</td><td>只知道“卡”，不知道系统判的是哪一类</td></tr></tbody></table></div>
 
-<p>第一种最稳，代码也最短，用的是系统的 <code>ApplicationExitInfo</code>：</p>
+<p data-block="115">第一种最稳，代码也最短，用的是系统的 <code>ApplicationExitInfo</code>：</p>
 
-<div class="code">
+<div data-block="116" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -536,26 +536,26 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>它有两个限制。<code>traceInputStream</code> 里只有本进程那一段，别的进程的栈出于隐私不会交给应用。另外，进程被判了 ANR 却活了下来（用户点了“等待”），之后因为别的原因死掉时，这条记录仍然带着当时的 trace。所以它统计的是“发生过 ANR 的进程”，和“因 ANR 而死”略有出入。</p>
+<p data-block="117">它有两个限制。<code>traceInputStream</code> 里只有本进程那一段，别的进程的栈出于隐私不会交给应用。另外，进程被判了 ANR 却活了下来（用户点了“等待”），之后因为别的原因死掉时，这条记录仍然带着当时的 trace。所以它统计的是“发生过 ANR 的进程”，和“因 ANR 而死”略有出入。</p>
 
-<p>第三种办法值得多说两句。系统抓 Java 栈的时候，会给目标进程发一个 <code>SIGQUIT</code>，由运行时专门的线程把所有线程的栈写出去。应用可以在 native 层用 <code>sigaction</code> 把这个信号的处理接管过来：先在一个独立线程里把自己的线程栈记下来，再把信号交还给原来的处理函数。开源的崩溃采集库里，XCrash 一类用的就是这个思路。它的好处是不用等进程下次启动，代价是多了一块和系统实现细节绑在一起的 native 代码。</p>
+<p data-block="118">第三种办法值得多说两句。系统抓 Java 栈的时候，会给目标进程发一个 <code>SIGQUIT</code>，由运行时专门的线程把所有线程的栈写出去。应用可以在 native 层用 <code>sigaction</code> 把这个信号的处理接管过来：先在一个独立线程里把自己的线程栈记下来，再把信号交还给原来的处理函数。开源的崩溃采集库里，XCrash 一类用的就是这个思路。它的好处是不用等进程下次启动，代价是多了一块和系统实现细节绑在一起的 native 代码。</p>
 
-<p>第四种办法到处都有现成实现，定期往主线程抛一个任务，超时没有执行就记一笔。它和系统判定用的不是同一把尺子，拿它的数据去解释一个具体的 ANR 经常对不上，更适合用来看趋势。</p>
+<p data-block="119">第四种办法到处都有现成实现，定期往主线程抛一个任务，超时没有执行就记一笔。它和系统判定用的不是同一把尺子，拿它的数据去解释一个具体的 ANR 经常对不上，更适合用来看趋势。</p>
 
-<h2 id="5-trace">
+<h2 data-block="120" id="5-trace">
               5. 读懂一份 trace
               <a class="anchor" href="#5-trace">链接到此标题</a>
             </h2>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/07-trace-anatomy.webp" alt="一份 ANR trace 的结构" loading="lazy" /></figure>
+<figure data-block="121" class="prose-figure"><img src="/images/android-anr-analysis/07-trace-anatomy.webp" alt="一份 ANR trace 的结构" loading="lazy" /></figure>
 
-<p>trace 文件是纯文本，一个进程接一个进程地排。开头是 <code>Subject</code>（Reason 原文）和当事进程的内存头，然后每个进程一段，段与段之间由系统插入 <code>----- dumping pid: N at &lt;uptime 毫秒&gt; -----</code>。各行的作用图里标了序号，这里补几条读法。</p>
+<p data-block="122">trace 文件是纯文本，一个进程接一个进程地排。开头是 <code>Subject</code>（Reason 原文）和当事进程的内存头，然后每个进程一段，段与段之间由系统插入 <code>----- dumping pid: N at &lt;uptime 毫秒&gt; -----</code>。各行的作用图里标了序号，这里补几条读法。</p>
 
-<p><strong>时间要对齐。</strong> 每个进程的 dump 时刻不同，从 <code>dumping pid</code> 那行的 uptime 能看出先后，system_server 往往比当事进程晚一两秒。拿 trace 里的栈去对日志时间戳，以这一行为准。</p>
+<p data-block="123"><strong>时间要对齐。</strong> 每个进程的 dump 时刻不同，从 <code>dumping pid</code> 那行的 uptime 能看出先后，system_server 往往比当事进程晚一两秒。拿 trace 里的栈去对日志时间戳，以这一行为准。</p>
 
-<p><strong>线程块的第一行信息量最大。</strong></p>
+<p data-block="124"><strong>线程块的第一行信息量最大。</strong></p>
 
-<div class="code">
+<div data-block="125" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -566,11 +566,11 @@
               <pre><code><span class="line">&quot;main&quot; prio=5 tid=1 Sleeping</span></code></pre>
             </div>
 
-<p>依次是线程名、优先级、线程编号和状态。状态常见的有 <code>Sleeping</code>（在等，锁、条件变量、消息队列都算）、<code>Blocked</code>、<code>Waiting</code>、<code>Native</code>（在 JNI 或系统调用里）、<code>Runnable</code>（正在跑，或者在就绪队列里）。下面几行里 <code>sysTid</code> 是内核看到的线程号，和 <code>ps</code>、<code>top</code> 里对得上。<code>schedstat</code> 的三个数依次是运行时间、在就绪队列里等待的时间、用掉的时间片数，前两个单位是纳秒；第二个数很大，说明这个线程一直在等 CPU。</p>
+<p data-block="126">依次是线程名、优先级、线程编号和状态。状态常见的有 <code>Sleeping</code>（在等，锁、条件变量、消息队列都算）、<code>Blocked</code>、<code>Waiting</code>、<code>Native</code>（在 JNI 或系统调用里）、<code>Runnable</code>（正在跑，或者在就绪队列里）。下面几行里 <code>sysTid</code> 是内核看到的线程号，和 <code>ps</code>、<code>top</code> 里对得上。<code>schedstat</code> 的三个数依次是运行时间、在就绪队列里等待的时间、用掉的时间片数，前两个单位是纳秒；第二个数很大，说明这个线程一直在等 CPU。</p>
 
-<p><strong>锁信息直接给出下一步。</strong> ART 在栈帧下面列出和锁有关的信息：</p>
+<p data-block="127"><strong>锁信息直接给出下一步。</strong> ART 在栈帧下面列出和锁有关的信息：</p>
 
-<div class="code">
+<div data-block="128" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -581,68 +581,68 @@
               <pre><code><span class="line">  - waiting to lock &lt;0x0d1f4c34&gt; (a com.example.shop.data.AccountStore) held by thread 14</span></code></pre>
             </div>
 
-<p>等的是哪个对象，被哪个线程拿着，都写明了。这里的线程号对应另一个线程块第一行里的 <code>tid=</code>。翻到 <code>tid=14</code> 那一块，看它拿着锁在做什么，因果链就出来了。<code>- locked &lt;0x…&gt; (a …)</code> 表示这一帧持有某个锁；<code>- waiting on &lt;0x…&gt; (a java.lang.Object)</code> 是在等条件变量。</p>
+<p data-block="129">等的是哪个对象，被哪个线程拿着，都写明了。这里的线程号对应另一个线程块第一行里的 <code>tid=</code>。翻到 <code>tid=14</code> 那一块，看它拿着锁在做什么，因果链就出来了。<code>- locked &lt;0x…&gt; (a …)</code> 表示这一帧持有某个锁；<code>- waiting on &lt;0x…&gt; (a java.lang.Object)</code> 是在等条件变量。</p>
 
-<p><strong>以 <code>kernel:</code> 开头的行</strong>是内核栈，只在线程陷入系统调用时出现。<code>binder_ioctl</code>、<code>futex_wait</code>、写盘相关的几个名字出现的频率最高，分别对应 Binder 调用、等锁、文件 IO。</p>
+<p data-block="130"><strong>以 <code>kernel:</code> 开头的行</strong>是内核栈，只在线程陷入系统调用时出现。<code>binder_ioctl</code>、<code>futex_wait</code>、写盘相关的几个名字出现的频率最高，分别对应 Binder 调用、等锁、文件 IO。</p>
 
-<p><strong>内存头在最前面。</strong> 文件开头的 <code>RssHwmKb</code>、<code>RssKb</code>、<code>VmSwapKb</code> 是当事进程的常驻内存峰值、当前值和换出量。这几个数很大的时候，ANR 可能和内存压力有关，第 5.1 节的第六类会用到。</p>
+<p data-block="131"><strong>内存头在最前面。</strong> 文件开头的 <code>RssHwmKb</code>、<code>RssKb</code>、<code>VmSwapKb</code> 是当事进程的常驻内存峰值、当前值和换出量。这几个数很大的时候，ANR 可能和内存压力有关，第 5.1 节的第六类会用到。</p>
 
-<h3 id="5-1">5.1 主线程停在哪里，下一步去哪</h3>
+<h3 data-block="132" id="5-1">5.1 主线程停在哪里，下一步去哪</h3>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/08-main-thread.webp" alt="主线程停在哪里，下一步去哪" loading="lazy" /></figure>
+<figure data-block="133" class="prose-figure"><img src="/images/android-anr-analysis/08-main-thread.webp" alt="主线程停在哪里，下一步去哪" loading="lazy" /></figure>
 
-<p>把常见的主线程形态归成六类之后，拿到一份 trace 通常一两分钟就能分出方向。图里每一类的左边是栈上的样子，右边是读法和下一步。</p>
+<p data-block="134">把常见的主线程形态归成六类之后，拿到一份 trace 通常一两分钟就能分出方向。图里每一类的左边是栈上的样子，右边是读法和下一步。</p>
 
-<p>前四类都直接指向一个具体的等待对象或耗时代码，顺着走就行。第 6 节里有它们的完整例子。要展开说的是后两类。</p>
+<p data-block="135">前四类都直接指向一个具体的等待对象或耗时代码，顺着走就行。第 6 节里有它们的完整例子。要展开说的是后两类。</p>
 
-<p><strong>空闲。</strong> 主线程停在 <code>nativePollOnce</code>，状态 <code>Sleeping</code>。它说明 dump 这一刻主线程没事可做，仅此而已。结合 Reason 有三种可能：卡住的阶段已经过去（开头那张工单就是这种）；Reason 是广播，而问题出在一个 <code>goAsync()</code> 之后忘了 finish 的后台任务上；或者主线程根本没轮到执行那个回调，它前面压着的别的消息在 dump 时已经跑完了。三种可能光看主线程都分不出来，要去看别的线程和 Reason 对应的时间窗。</p>
+<p data-block="136"><strong>空闲。</strong> 主线程停在 <code>nativePollOnce</code>，状态 <code>Sleeping</code>。它说明 dump 这一刻主线程没事可做，仅此而已。结合 Reason 有三种可能：卡住的阶段已经过去（开头那张工单就是这种）；Reason 是广播，而问题出在一个 <code>goAsync()</code> 之后忘了 finish 的后台任务上；或者主线程根本没轮到执行那个回调，它前面压着的别的消息在 dump 时已经跑完了。三种可能光看主线程都分不出来，要去看别的线程和 Reason 对应的时间窗。</p>
 
-<p><strong>没抢到 CPU。</strong> 状态是 <code>Runnable</code>，栈顶是再普通不过的代码，<code>schedstat</code> 里的等待时间却很长。线程是就绪的，只是整机的 CPU 被别人占着。去主日志的 <code>CPU usage</code> 段看是谁，再确认 <code>Frozen</code> 那一行：进程如果被冻结过，解冻需要时间，这段时间同样算在期限内。这一类的根因常常不在应用自己的代码里，但低端机上它真实存在，而且会成片出现。</p>
+<p data-block="137"><strong>没抢到 CPU。</strong> 状态是 <code>Runnable</code>，栈顶是再普通不过的代码，<code>schedstat</code> 里的等待时间却很长。线程是就绪的，只是整机的 CPU 被别人占着。去主日志的 <code>CPU usage</code> 段看是谁，再确认 <code>Frozen</code> 那一行：进程如果被冻结过，解冻需要时间，这段时间同样算在期限内。这一类的根因常常不在应用自己的代码里，但低端机上它真实存在，而且会成片出现。</p>
 
-<h3 id="5-2">5.2 别的线程怎么看</h3>
+<h3 data-block="138" id="5-2">5.2 别的线程怎么看</h3>
 
-<p>主线程只是入口，多数 ANR 的答案在别的线程上。看其他线程块的时候，有三个名字规律可以用。</p>
+<p data-block="139">主线程只是入口，多数 ANR 的答案在别的线程上。看其他线程块的时候，有三个名字规律可以用。</p>
 
-<p>名字以 <code>binder:</code> 开头、后面跟着进程号和编号的，是 Binder 线程池里的线程，它们在处理别的进程发来的调用。Reason 是 Provider 的 ANR，要看的就是宿主进程里这些线程在做什么。反过来，自己的进程作为调用方发出的同步 Binder 调用，跑在发起调用的那个线程上，主线程发起的就在主线程上，栈顶是 <code>BinderProxy.transact</code>。</p>
+<p data-block="140">名字以 <code>binder:</code> 开头、后面跟着进程号和编号的，是 Binder 线程池里的线程，它们在处理别的进程发来的调用。Reason 是 Provider 的 ANR，要看的就是宿主进程里这些线程在做什么。反过来，自己的进程作为调用方发出的同步 Binder 调用，跑在发起调用的那个线程上，主线程发起的就在主线程上，栈顶是 <code>BinderProxy.transact</code>。</p>
 
-<p>名字里带 <code>OkHttp</code>、<code>Retrofit</code>、<code>pool-</code> 这类字样的，一般是应用自己或者三方库开的线程池。等锁的 ANR 里，拿着锁的那个线程多半在这里。</p>
+<p data-block="141">名字里带 <code>OkHttp</code>、<code>Retrofit</code>、<code>pool-</code> 这类字样的，一般是应用自己或者三方库开的线程池。等锁的 ANR 里，拿着锁的那个线程多半在这里。</p>
 
-<p>还有几种线程不用细看：<code>RenderThread</code>、<code>HeapTaskDaemon</code> 一类的框架线程，除非它们恰好出现在锁信息里，否则和业务无关。</p>
+<p data-block="142">还有几种线程不用细看：<code>RenderThread</code>、<code>HeapTaskDaemon</code> 一类的框架线程，除非它们恰好出现在锁信息里，否则和业务无关。</p>
 
-<p>线程数量本身也是个线索。一个进程有几百个线程，光是调度开销就不小，这类进程的 ANR 常常带着“没抢到 CPU”的特征。</p>
+<p data-block="143">线程数量本身也是个线索。一个进程有几百个线程，光是调度开销就不小，这类进程的 ANR 常常带着“没抢到 CPU”的特征。</p>
 
-<h3 id="5-3-trace">5.3 trace 里的时间差</h3>
+<h3 data-block="144" id="5-3-trace">5.3 trace 里的时间差</h3>
 
-<p>栈是某一时刻的快照，而这个时刻永远晚于卡住的时刻。三个时间点要分清：卡住开始、期限到期（判定）、dump 完成。输入 ANR 里前两个相差 5 秒，第三个还要再晚几百毫秒到几秒。</p>
+<p data-block="145">栈是某一时刻的快照，而这个时刻永远晚于卡住的时刻。三个时间点要分清：卡住开始、期限到期（判定）、dump 完成。输入 ANR 里前两个相差 5 秒，第三个还要再晚几百毫秒到几秒。</p>
 
-<p>Android 14 起对当事进程做了预 dump，第一个进程那一段和判定时刻靠得很近。其余进程是在之后的完整 dump 里依次抓的，彼此之间差一两秒。Android 13 及更早的版本没有预 dump，所有进程都在完整 dump 里依次抓。</p>
+<p data-block="146">Android 14 起对当事进程做了预 dump，第一个进程那一段和判定时刻靠得很近。其余进程是在之后的完整 dump 里依次抓的，彼此之间差一两秒。Android 13 及更早的版本没有预 dump，所有进程都在完整 dump 里依次抓。</p>
 
-<p>时间差带来的后果是：栈上看到的，可能是卡住结束之后主线程接着做的下一件事。主线程空闲、或者停在一个明显不会耗时的位置时，就要想到这一层，回到日志里去看判定之前那段时间发生了什么。开头那张工单的转机就在这里，第 6.7 节会回到它。</p>
+<p data-block="147">时间差带来的后果是：栈上看到的，可能是卡住结束之后主线程接着做的下一件事。主线程空闲、或者停在一个明显不会耗时的位置时，就要想到这一层，回到日志里去看判定之前那段时间发生了什么。开头那张工单的转机就在这里，第 6.7 节会回到它。</p>
 
-<h2 id="6">
+<h2 data-block="148" id="6">
               6. 分析流程
               <a class="anchor" href="#6">链接到此标题</a>
             </h2>
 
-<figure class="prose-figure"><img src="/images/android-anr-analysis/09-flow.webp" alt="分析流程：从一份现场到一条结论" loading="lazy" /></figure>
+<figure data-block="149" class="prose-figure"><img src="/images/android-anr-analysis/09-flow.webp" alt="分析流程：从一份现场到一条结论" loading="lazy" /></figure>
 
-<p>六个步骤，每一步都有一个产出。拿不到产出就停在那一步补材料，往下走只是浪费时间。</p>
+<p data-block="150">六个步骤，每一步都有一个产出。拿不到产出就停在那一步补材料，往下走只是浪费时间。</p>
 
-<p><strong>第一步，收现场。</strong> 第 4 节的五处痕迹，能拿到的都拿到。最要紧的是 trace 和前后各一分钟的日志。ANR 现场不会等人，测试同学复现一次之后要立刻把 logcat 存下来，否则缓冲区很快会被冲掉。</p>
+<p data-block="151"><strong>第一步，收现场。</strong> 第 4 节的五处痕迹，能拿到的都拿到。最要紧的是 trace 和前后各一分钟的日志。ANR 现场不会等人，测试同学复现一次之后要立刻把 logcat 存下来，否则缓冲区很快会被冲掉。</p>
 
-<p><strong>第二步，读 Reason，定时间窗。</strong> Reason 说明哪个定时器先到点、等了多久。按类型找到起点，终点就是 dump 的时刻。这一步的产出是一段有起有止的时间和被点名的进程。没有这一步，后面读出来的栈都是在猜。</p>
+<p data-block="152"><strong>第二步，读 Reason，定时间窗。</strong> Reason 说明哪个定时器先到点、等了多久。按类型找到起点，终点就是 dump 的时刻。这一步的产出是一段有起有止的时间和被点名的进程。没有这一步，后面读出来的栈都是在猜。</p>
 
-<p>Reason 里的关键字可以直接对号：</p>
+<p data-block="153">Reason 里的关键字可以直接对号：</p>
 
-<div class="table-wrap"><table><caption>Reason 关键字与类型对照</caption><thead><tr><th>Reason 里的关键字</th><th>类型</th><th>时间窗从哪里开始</th><th>先看什么</th></tr></thead><tbody><tr><td><code>is not responding. Waited</code></td><td>输入，窗口无响应</td><td>事件送达这条连接</td><td>主线程</td></tr><tr><td><code>does not have a focused window</code></td><td>输入，没有焦点窗口</td><td>应用获得焦点</td><td>页面为什么还没有可用的窗口</td></tr><tr><td><code>executing service</code></td><td>Service 回调</td><td>回调派发</td><td>主线程</td></tr><tr><td><code>did not then call Service.startForeground()</code></td><td>前台服务启动</td><td>启动命令派给应用</td><td><code>startForeground()</code> 为什么没执行到</td></tr><tr><td><code>Broadcast of Intent</code></td><td>广播</td><td>派发给这个接收器</td><td>主线程，或拿着 <code>PendingResult</code> 的线程</td></tr><tr><td><code>ContentProvider not responding</code></td><td>Provider 调用</td><td>调用方发起这次调用</td><td>宿主进程的 Binder 线程</td></tr><tr><td><code>failed to complete startup</code></td><td>进程启动</td><td><code>bindApplication</code> 下发</td><td>主线程，Provider 和 Application 的初始化</td></tr></tbody></table></div>
+<div data-block="154" class="table-wrap"><table><caption>Reason 关键字与类型对照</caption><thead><tr><th>Reason 里的关键字</th><th>类型</th><th>时间窗从哪里开始</th><th>先看什么</th></tr></thead><tbody><tr><td><code>is not responding. Waited</code></td><td>输入，窗口无响应</td><td>事件送达这条连接</td><td>主线程</td></tr><tr><td><code>does not have a focused window</code></td><td>输入，没有焦点窗口</td><td>应用获得焦点</td><td>页面为什么还没有可用的窗口</td></tr><tr><td><code>executing service</code></td><td>Service 回调</td><td>回调派发</td><td>主线程</td></tr><tr><td><code>did not then call Service.startForeground()</code></td><td>前台服务启动</td><td>启动命令派给应用</td><td><code>startForeground()</code> 为什么没执行到</td></tr><tr><td><code>Broadcast of Intent</code></td><td>广播</td><td>派发给这个接收器</td><td>主线程，或拿着 <code>PendingResult</code> 的线程</td></tr><tr><td><code>ContentProvider not responding</code></td><td>Provider 调用</td><td>调用方发起这次调用</td><td>宿主进程的 Binder 线程</td></tr><tr><td><code>failed to complete startup</code></td><td>进程启动</td><td><code>bindApplication</code> 下发</td><td>主线程，Provider 和 Application 的初始化</td></tr></tbody></table></div>
 
-<p><strong>第三步，找当事线程。</strong> 输入、Service、进程启动三类，当事线程是主线程。广播可能是主线程，也可能是拿着 <code>PendingResult</code> 的那个线程。Provider 要去宿主进程看 Binder 线程。找到之后把栈归到 5.1 的六类里。</p>
+<p data-block="155"><strong>第三步，找当事线程。</strong> 输入、Service、进程启动三类，当事线程是主线程。广播可能是主线程，也可能是拿着 <code>PendingResult</code> 的那个线程。Provider 要去宿主进程看 Binder 线程。找到之后把栈归到 5.1 的六类里。</p>
 
-<p><strong>第四步，补上下文。</strong> 对端进程和 system_server 那几段，主日志的 CPU 占用，<code>Frozen</code> 标记，以及时间窗内的业务日志。DropBox 那份报告里还多一段内存压力的快照，怀疑设备整体卡顿时可以看。</p>
+<p data-block="156"><strong>第四步，补上下文。</strong> 对端进程和 system_server 那几段，主日志的 CPU 占用，<code>Frozen</code> 标记，以及时间窗内的业务日志。DropBox 那份报告里还多一段内存压力的快照，怀疑设备整体卡顿时可以看。</p>
 
-<p><strong>第五步，复现与验证。</strong> 能稳定重现的，用 Perfetto 抓一条系统级的 trace，几个分类一起开：</p>
+<p data-block="157"><strong>第五步，复现与验证。</strong> 能稳定重现的，用 Perfetto 抓一条系统级的 trace，几个分类一起开：</p>
 
-<div class="code">
+<div data-block="158" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">BASH</span>
@@ -654,15 +654,15 @@
 <span class="line">  -t <span class="tok-num">30s</span> sched freq idle am wm gfx view binder_driver</span></code></pre>
             </div>
 
-<p>不能重现的，至少要找到一条能佐证解释的业务日志。</p>
+<p data-block="159">不能重现的，至少要找到一条能佐证解释的业务日志。</p>
 
-<p><strong>第六步，修复并守住。</strong> 见第 7 节。</p>
+<p data-block="160"><strong>第六步，修复并守住。</strong> 见第 7 节。</p>
 
-<p>下面用七个例子把第三步到第五步走一遍。片段都做了删减，包名沿用 <code>com.example.shop</code>。</p>
+<p data-block="161">下面用七个例子把第三步到第五步走一遍。片段都做了删减，包名沿用 <code>com.example.shop</code>。</p>
 
-<h3 id="6-1-service">6.1 等锁：一次 Service 超时</h3>
+<h3 data-block="162" id="6-1-service">6.1 等锁：一次 Service 超时</h3>
 
-<div class="code">
+<div data-block="163" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -687,11 +687,11 @@
 <span class="line">  at com.example.shop.SyncWorker.run(SyncWorker.java:44)</span></code></pre>
             </div>
 
-<p>主线程进 <code>syncAll()</code> 要拿 <code>AccountStore</code> 的锁，锁在 <code>SyncWorker</code> 手里，而它拿着锁在做网络请求。两块栈拼在一起，因果就完整了。修法不是给哪一边加超时，而是别让网络请求发生在锁里面：锁内只做内存读写，请求挪到锁外面，拿到结果之后再进锁更新。</p>
+<p data-block="164">主线程进 <code>syncAll()</code> 要拿 <code>AccountStore</code> 的锁，锁在 <code>SyncWorker</code> 手里，而它拿着锁在做网络请求。两块栈拼在一起，因果就完整了。修法不是给哪一边加超时，而是别让网络请求发生在锁里面：锁内只做内存读写，请求挪到锁外面，拿到结果之后再进锁更新。</p>
 
-<h3 id="6-2-reason">6.2 广播 Reason，主线程却空闲</h3>
+<h3 data-block="165" id="6-2-reason">6.2 广播 Reason，主线程却空闲</h3>
 
-<div class="code">
+<div data-block="166" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -712,11 +712,11 @@
 <span class="line">  at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)</span></code></pre>
             </div>
 
-<p>这是一个有序广播，接收器在 <code>onReceive()</code> 里调了 <code>goAsync()</code>，把 <code>PendingResult</code> 交给线程池去刷新。<code>RefreshTask</code> 里的网络请求没有超时，<code>finish()</code> 写在请求之后，于是永远执行不到。翻到代码里，<code>finish()</code> 就在 <code>run()</code> 的最后一行。</p>
+<p data-block="167">这是一个有序广播，接收器在 <code>onReceive()</code> 里调了 <code>goAsync()</code>，把 <code>PendingResult</code> 交给线程池去刷新。<code>RefreshTask</code> 里的网络请求没有超时，<code>finish()</code> 写在请求之后，于是永远执行不到。翻到代码里，<code>finish()</code> 就在 <code>run()</code> 的最后一行。</p>
 
-<p>修法是把 <code>finish()</code> 放进 <code>finally</code>，再给请求加上超时：</p>
+<p data-block="168">修法是把 <code>finish()</code> 放进 <code>finally</code>，再给请求加上超时：</p>
 
-<div class="code">
+<div data-block="169" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -736,11 +736,11 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>还可以多想一步：接收器到底需不需要等网络结果。大多数情况下，<code>goAsync()</code> 可以换成“收到广播就交给 WorkManager，立即返回”。</p>
+<p data-block="170">还可以多想一步：接收器到底需不需要等网络结果。大多数情况下，<code>goAsync()</code> 可以换成“收到广播就交给 WorkManager，立即返回”。</p>
 
-<h3 id="6-3-anr">6.3 等对端：一次跨进程的输入 ANR</h3>
+<h3 data-block="171" id="6-3-anr">6.3 等对端：一次跨进程的输入 ANR</h3>
 
-<div class="code">
+<div data-block="172" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -759,9 +759,9 @@
 <span class="line">  at com.example.shop.feed.FeedFragment.onViewCreated(FeedFragment.kt:88)</span></code></pre>
             </div>
 
-<p>点击触发了页面刷新，刷新在主线程上同步查询了一个 Provider。这个 Provider 属于哪个进程，从 trace 的其他段里找。翻到那个进程，看名字以 <code>binder:</code> 开头的线程：</p>
+<p data-block="173">点击触发了页面刷新，刷新在主线程上同步查询了一个 Provider。这个 Provider 属于哪个进程，从 trace 的其他段里找。翻到那个进程，看名字以 <code>binder:</code> 开头的线程：</p>
 
-<div class="code">
+<div data-block="174" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -778,11 +778,11 @@
 <span class="line">  at com.example.partner.Provider.query(Provider.java:131)</span></code></pre>
             </div>
 
-<p>对端在自己的 Binder 线程里，对一个很大的表做了一次查询。两边能推动哪一边，就改哪一边：对端加索引是治本；推不动对端的话，客户端至少要把这次查询挪到后台线程，页面先显示缓存。</p>
+<p data-block="175">对端在自己的 Binder 线程里，对一个很大的表做了一次查询。两边能推动哪一边，就改哪一边：对端加索引是治本；推不动对端的话，客户端至少要把这次查询挪到后台线程，页面先显示缓存。</p>
 
-<h3 id="6-4-reason">6.4 Reason 说的是广播，问题在上一条消息</h3>
+<h3 data-block="176" id="6-4-reason">6.4 Reason 说的是广播，问题在上一条消息</h3>
 
-<div class="code">
+<div data-block="177" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -800,13 +800,13 @@
 <span class="line">  at com.example.shop.SplashActivity.onCreate(SplashActivity.java:92)</span></code></pre>
             </div>
 
-<p>一个静态注册的接收器负责处理语言切换，它要回到主线程上执行。主线程此刻正在启动页的 <code>onCreate()</code> 里解析一份很大的配置 JSON，广播的消息排在后面。先到期的定时器是广播的，根因却是启动时的配置解析。</p>
+<p data-block="178">一个静态注册的接收器负责处理语言切换，它要回到主线程上执行。主线程此刻正在启动页的 <code>onCreate()</code> 里解析一份很大的配置 JSON，广播的消息排在后面。先到期的定时器是广播的，根因却是启动时的配置解析。</p>
 
-<p>这种情况要靠时间窗来区分：Reason 对应的派发时刻到 dump 时刻之间，主线程一直停在另一件事上。要修的是 <code>ConfigManager</code>，和接收器无关。</p>
+<p data-block="179">这种情况要靠时间窗来区分：Reason 对应的派发时刻到 dump 时刻之间，主线程一直停在另一件事上。要修的是 <code>ConfigManager</code>，和接收器无关。</p>
 
-<h3 id="6-5-provider-binder">6.5 Provider：Binder 线程在等主线程</h3>
+<h3 data-block="180" id="6-5-provider-binder">6.5 Provider：Binder 线程在等主线程</h3>
 
-<div class="code">
+<div data-block="181" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -829,13 +829,13 @@
 <span class="line">  at android.app.ActivityThread.installProvider(ActivityThread.java:...)</span></code></pre>
             </div>
 
-<p><code>search</code> 进程里的 Provider 在 <code>onCreate()</code> 里同步建一份全量索引，建索引期间一直拿着 <code>Index</code> 的锁。调用方（一个打开了无响应检测的系统组件）这时发来一次查询，Binder 线程拿不到锁，调用超时，调用方把 <code>com.example.shop:search</code> 报了上去。</p>
+<p data-block="182"><code>search</code> 进程里的 Provider 在 <code>onCreate()</code> 里同步建一份全量索引，建索引期间一直拿着 <code>Index</code> 的锁。调用方（一个打开了无响应检测的系统组件）这时发来一次查询，Binder 线程拿不到锁，调用超时，调用方把 <code>com.example.shop:search</code> 报了上去。</p>
 
-<p>修法在宿主这一边：<code>onCreate()</code> 只做最少的初始化，立刻返回，索引放到后台线程去建；查询进来时索引还没就绪，就返回空结果并带上一个“正在建索引”的标记，由调用方稍后重试。</p>
+<p data-block="183">修法在宿主这一边：<code>onCreate()</code> 只做最少的初始化，立刻返回，索引放到后台线程去建；查询进来时索引还没就绪，就返回空结果并带上一个“正在建索引”的标记，由调用方稍后重试。</p>
 
-<h3 id="6-6-startforeground">6.6 前台服务：<code>startForeground()</code> 没执行到</h3>
+<h3 data-block="184" id="6-6-startforeground">6.6 前台服务：<code>startForeground()</code> 没执行到</h3>
 
-<div class="code">
+<div data-block="185" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">TEXT</span>
@@ -849,9 +849,9 @@
 <span class="line">  at android.os.MessageQueue.nativePollOnce(Native Method)</span></code></pre>
             </div>
 
-<p>主线程空闲，Service 也早就跑完返回了，问题在代码的顺序上：</p>
+<p data-block="186">主线程空闲，Service 也早就跑完返回了，问题在代码的顺序上：</p>
 
-<div class="code">
+<div data-block="187" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -867,17 +867,17 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>用 <code>startForegroundService()</code> 拉起的服务，不管后面做不做，都要先调一次 <code>startForeground()</code>。确实不需要继续的话，调完之后再 <code>stopSelf()</code>。</p>
+<p data-block="188">用 <code>startForegroundService()</code> 拉起的服务，不管后面做不做，都要先调一次 <code>startForeground()</code>。确实不需要继续的话，调完之后再 <code>stopSelf()</code>。</p>
 
-<h3 id="6-7">6.7 主线程空闲，一切看起来都正常</h3>
+<h3 data-block="189" id="6-7">6.7 主线程空闲，一切看起来都正常</h3>
 
-<p>回到开头的那张工单。Reason 是输入超时，<code>Waited 5002ms</code>；主线程空闲；应用自己的线程里没有值得怀疑的地方。</p>
+<p data-block="190">回到开头的那张工单。Reason 是输入超时，<code>Waited 5002ms</code>；主线程空闲；应用自己的线程里没有值得怀疑的地方。</p>
 
-<p>先确认时间窗。事件在 T 时刻送达，T+5.002 秒判定，dump 在判定之后几百毫秒完成。主线程在 dump 时空闲，说明它在这 5 秒里的某一刻被占住过，而且在 dump 之前已经恢复。能同时满足这两点的只有一种情形：处理这次点击的代码本身花了 5 秒多，然后正常返回了。</p>
+<p data-block="191">先确认时间窗。事件在 T 时刻送达，T+5.002 秒判定，dump 在判定之后几百毫秒完成。主线程在 dump 时空闲，说明它在这 5 秒里的某一刻被占住过，而且在 dump 之前已经恢复。能同时满足这两点的只有一种情形：处理这次点击的代码本身花了 5 秒多，然后正常返回了。</p>
 
-<p>去日志里找证据。应用在 <code>submitOrder()</code> 的前后各打了一行日志，两行之间隔了 5.4 秒，中间是一次失败后自动重试的同步请求。再往前，logcat 里还有一行 <code>Choreographer: Skipped 324 frames!</code>，帧数乘以 16 毫秒，和 5 秒出头对得上。</p>
+<p data-block="192">去日志里找证据。应用在 <code>submitOrder()</code> 的前后各打了一行日志，两行之间隔了 5.4 秒，中间是一次失败后自动重试的同步请求。再往前，logcat 里还有一行 <code>Choreographer: Skipped 324 frames!</code>，帧数乘以 16 毫秒，和 5 秒出头对得上。</p>
 
-<div class="code">
+<div data-block="193" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -896,42 +896,42 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>那张工单如果能重来一遍，走的就是 5.1 里“空闲”那一格的后半句：主线程的栈给不出答案时，把 Reason 里的毫秒数当成时间窗的长度，去日志里找这段时间里跑过的代码。</p>
+<p data-block="194">那张工单如果能重来一遍，走的就是 5.1 里“空闲”那一格的后半句：主线程的栈给不出答案时，把 Reason 里的毫秒数当成时间窗的长度，去日志里找这段时间里跑过的代码。</p>
 
-<h2 id="7">
+<h2 data-block="195" id="7">
               7. 修的时候
               <a class="anchor" href="#7">链接到此标题</a>
             </h2>
 
-<p>按类来修，比按“ANR”这个笼统的词去优化有效得多。</p>
+<p data-block="196">按类来修，比按“ANR”这个笼统的词去优化有效得多。</p>
 
-<p><strong>等锁。</strong> 原则是锁里面不做任何可能阻塞的事，IO、网络、Binder 调用都算。主线程和后台线程共享的锁尤其要小心：后台线程持锁三秒对它自己无所谓，对主线程就是一次 ANR。能用不可变对象加“整体替换”来代替加锁修改的场景，尽量替换。</p>
+<p data-block="197"><strong>等锁。</strong> 原则是锁里面不做任何可能阻塞的事，IO、网络、Binder 调用都算。主线程和后台线程共享的锁尤其要小心：后台线程持锁三秒对它自己无所谓，对主线程就是一次 ANR。能用不可变对象加“整体替换”来代替加锁修改的场景，尽量替换。</p>
 
-<p><strong>等别人兑现。</strong> 主线程上的 <code>Future.get()</code>、<code>CountDownLatch.await()</code>、协程的 <code>runBlocking {}</code>，都要先回答一个问题：对方会不会需要主线程才能完成。Kotlin 协程里用 <code>runBlocking</code> 等一个 <code>Dispatchers.Main</code> 上的任务，是一定等不到的写法。</p>
+<p data-block="198"><strong>等别人兑现。</strong> 主线程上的 <code>Future.get()</code>、<code>CountDownLatch.await()</code>、协程的 <code>runBlocking {}</code>，都要先回答一个问题：对方会不会需要主线程才能完成。Kotlin 协程里用 <code>runBlocking</code> 等一个 <code>Dispatchers.Main</code> 上的任务，是一定等不到的写法。</p>
 
-<p><strong>等对端。</strong> 主线程上的一切同步 Binder 调用都当作不可控的耗时操作对待，包括 ContentProvider 查询、不少 <code>PackageManager</code> 的接口、别的进程提供的 AIDL 服务。能用异步 API 的换成异步，能缓存的先给缓存。</p>
+<p data-block="199"><strong>等对端。</strong> 主线程上的一切同步 Binder 调用都当作不可控的耗时操作对待，包括 ContentProvider 查询、不少 <code>PackageManager</code> 的接口、别的进程提供的 AIDL 服务。能用异步 API 的换成异步，能缓存的先给缓存。</p>
 
-<p><strong>自己在忙。</strong> 这一类最直白，栈顶就是答案。主线程上的 JSON 解析、图片解码、数据库查询、大的布局 inflate，挪到后台，结果通过回调回主线程。</p>
+<p data-block="200"><strong>自己在忙。</strong> 这一类最直白，栈顶就是答案。主线程上的 JSON 解析、图片解码、数据库查询、大的布局 inflate，挪到后台，结果通过回调回主线程。</p>
 
-<p><strong><code>apply()</code> 的积压。</strong> <code>SharedPreferences.apply()</code> 调了之后并没有完。它把写盘排进队列，而 <code>onStartCommand()</code>、<code>onDestroy()</code> 和 Activity 的 <code>onPause()</code>、<code>onStop()</code> 在返回前会同步等这个队列清空。配置文件很大、或者一次写了很多项的应用，这几个回调就会莫名变慢。数据量小的问题不大，数据量上来了换 DataStore 或者别的存储方案。</p>
+<p data-block="201"><strong><code>apply()</code> 的积压。</strong> <code>SharedPreferences.apply()</code> 调了之后并没有完。它把写盘排进队列，而 <code>onStartCommand()</code>、<code>onDestroy()</code> 和 Activity 的 <code>onPause()</code>、<code>onStop()</code> 在返回前会同步等这个队列清空。配置文件很大、或者一次写了很多项的应用，这几个回调就会莫名变慢。数据量小的问题不大，数据量上来了换 DataStore 或者别的存储方案。</p>
 
-<p><strong><code>goAsync()</code>。</strong> 三条规矩：<code>finish()</code> 写在 <code>finally</code> 里；后台任务自带超时；接收器实在不需要结果时，把工作转交给 WorkManager 之类的调度器，<code>onReceive()</code> 立即返回。</p>
+<p data-block="202"><strong><code>goAsync()</code>。</strong> 三条规矩：<code>finish()</code> 写在 <code>finally</code> 里；后台任务自带超时；接收器实在不需要结果时，把工作转交给 WorkManager 之类的调度器，<code>onReceive()</code> 立即返回。</p>
 
-<p><strong>前台服务。</strong> <code>startForeground()</code> 写在 <code>onStartCommand()</code> 的第一行，在任何可能提前返回的判断之前。</p>
+<p data-block="203"><strong>前台服务。</strong> <code>startForeground()</code> 写在 <code>onStartCommand()</code> 的第一行，在任何可能提前返回的判断之前。</p>
 
-<p><strong>Provider。</strong> <code>onCreate()</code> 只做最少的初始化；耗时的数据准备放到后台，别让 Binder 线程在初始化期间等主线程手里的锁。</p>
+<p data-block="204"><strong>Provider。</strong> <code>onCreate()</code> 只做最少的初始化；耗时的数据准备放到后台，别让 Binder 线程在初始化期间等主线程手里的锁。</p>
 
-<p><strong>启动期。</strong> Android 15 起有 15 秒的进程启动期限，它覆盖所有 ContentProvider 的 <code>onCreate()</code> 和 <code>Application.onCreate()</code>。初始化仓库（比如 AndroidX Startup）里的每一项都问一句“首帧之前真的需要吗”，不需要的改成延迟初始化。</p>
+<p data-block="205"><strong>启动期。</strong> Android 15 起有 15 秒的进程启动期限，它覆盖所有 ContentProvider 的 <code>onCreate()</code> 和 <code>Application.onCreate()</code>。初始化仓库（比如 AndroidX Startup）里的每一项都问一句“首帧之前真的需要吗”，不需要的改成延迟初始化。</p>
 
-<p><strong>没抢到 CPU。</strong> 应用能做的有限：少开后台线程，避免自己的后台任务和自己的前台进程抢 CPU；在广播和 Service 回调里少做重活。系统层面的问题，比如后台应用成批启动、内存回收，要靠 Perfetto 的系统 trace 来证明，然后反馈给平台或厂商。</p>
+<p data-block="206"><strong>没抢到 CPU。</strong> 应用能做的有限：少开后台线程，避免自己的后台任务和自己的前台进程抢 CPU；在广播和 Service 回调里少做重活。系统层面的问题，比如后台应用成批启动、内存回收，要靠 Perfetto 的系统 trace 来证明，然后反馈给平台或厂商。</p>
 
-<p>这些原则可以浓缩成一张代码评审用的清单，遇到主线程、Service、BroadcastReceiver、ContentProvider 的改动时过一遍：</p>
+<p data-block="207">这些原则可以浓缩成一张代码评审用的清单，遇到主线程、Service、BroadcastReceiver、ContentProvider 的改动时过一遍：</p>
 
-<div class="table-wrap"><table><caption>和 ANR 相关的代码评审清单</caption><thead><tr><th>检查项</th><th>为什么</th></tr></thead><tbody><tr><td>主线程上有没有新出现的同步 Binder 调用</td><td>对端耗时不可控</td></tr><tr><td>主线程会不会去拿一把后台线程也在用的锁</td><td>持锁方一旦做 IO，主线程就跟着等</td></tr><tr><td><code>synchronized</code> 块里有没有 IO、网络、Binder</td><td>同上，而且这种写法从栈上一眼能看出来</td></tr><tr><td>回调结束前调了多少次 <code>apply()</code>，文件有多大</td><td>回调结束前要同步等写盘</td></tr><tr><td><code>goAsync()</code> 的 <code>finish()</code> 是否在 <code>finally</code> 里，任务有没有超时</td><td><code>finish()</code> 不执行，计时就不会停</td></tr><tr><td><code>startForegroundService()</code> 拉起的服务，有没有先调 <code>startForeground()</code></td><td>30 秒的期限只认这一句</td></tr><tr><td>新加的 ContentProvider 的 <code>onCreate()</code> 做了什么</td><td>它在进程启动期限之内，也可能挡住 Binder 线程</td></tr><tr><td>新加的静态注册接收器在 <code>onReceive()</code> 里做了什么</td><td>静态注册的接收器都在计时</td></tr><tr><td>主线程上新出现的 JSON 解析、图片解码、数据库查询</td><td>自己在忙的那一类</td></tr></tbody></table></div>
+<div data-block="208" class="table-wrap"><table><caption>和 ANR 相关的代码评审清单</caption><thead><tr><th>检查项</th><th>为什么</th></tr></thead><tbody><tr><td>主线程上有没有新出现的同步 Binder 调用</td><td>对端耗时不可控</td></tr><tr><td>主线程会不会去拿一把后台线程也在用的锁</td><td>持锁方一旦做 IO，主线程就跟着等</td></tr><tr><td><code>synchronized</code> 块里有没有 IO、网络、Binder</td><td>同上，而且这种写法从栈上一眼能看出来</td></tr><tr><td>回调结束前调了多少次 <code>apply()</code>，文件有多大</td><td>回调结束前要同步等写盘</td></tr><tr><td><code>goAsync()</code> 的 <code>finish()</code> 是否在 <code>finally</code> 里，任务有没有超时</td><td><code>finish()</code> 不执行，计时就不会停</td></tr><tr><td><code>startForegroundService()</code> 拉起的服务，有没有先调 <code>startForeground()</code></td><td>30 秒的期限只认这一句</td></tr><tr><td>新加的 ContentProvider 的 <code>onCreate()</code> 做了什么</td><td>它在进程启动期限之内，也可能挡住 Binder 线程</td></tr><tr><td>新加的静态注册接收器在 <code>onReceive()</code> 里做了什么</td><td>静态注册的接收器都在计时</td></tr><tr><td>主线程上新出现的 JSON 解析、图片解码、数据库查询</td><td>自己在忙的那一类</td></tr></tbody></table></div>
 
-<p><strong>可观测性。</strong> debug 包打开 StrictMode，把主线程 IO 这类问题在开发阶段暴露出来：</p>
+<p data-block="209"><strong>可观测性。</strong> debug 包打开 StrictMode，把主线程 IO 这类问题在开发阶段暴露出来：</p>
 
-<div class="code">
+<div data-block="210" class="code">
               <div class="code__bar">
                 <span class="code__file"></span>
                 <span class="code__lang">KOTLIN</span>
@@ -949,41 +949,41 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<p>线上用 <code>ApplicationExitInfo</code> 按 <code>Subject</code> 分桶统计 ANR 率，版本之间做对比。应用内的主线程卡顿监控可以继续留着，但要清楚它只看得见主线程，也拿不到系统的视角。</p>
+<p data-block="211">线上用 <code>ApplicationExitInfo</code> 按 <code>Subject</code> 分桶统计 ANR 率，版本之间做对比。应用内的主线程卡顿监控可以继续留着，但要清楚它只看得见主线程，也拿不到系统的视角。</p>
 
-<h2 id="8">
+<h2 data-block="212" id="8">
               8. 几个常见误解
               <a class="anchor" href="#8">链接到此标题</a>
             </h2>
 
-<div class="table-wrap"><table><caption>关于 ANR 的十个常见误解</caption><thead><tr><th>说法</th><th>实际情况</th><th>详见</th></tr></thead><tbody><tr><td>主线程卡 5 秒就一定 ANR</td><td>只在有一个输入事件正等着被处理时成立；没有事件时卡多久都不触发输入 ANR</td><td>2.1</td></tr><tr><td><code>startService()</code> 之后不 <code>stopSelf()</code> 会 ANR</td><td>20 秒计的是一次回调从派发到返回，和之后是否停止无关</td><td>2.2</td></tr><tr><td><code>onCreate()</code> 慢会 ANR</td><td>AOSP 没有生命周期定时器；Android 15 起另有 15 秒的进程启动期限</td><td>2.6</td></tr><tr><td>发生 ANR 进程就没了</td><td>弹窗之后进程还活着，点“等待”就继续运行</td><td>3</td></tr><tr><td>后台进程不会 ANR</td><td>会，只是不弹窗，直接被结束</td><td>3</td></tr><tr><td>debug 包的输入超时是 60 秒</td><td>60 秒只给 instrumentation 和 wrapper；被调试器附加的进程不判 ANR</td><td>2.7</td></tr><tr><td>Provider 没按时发布会报 ANR</td><td>会被直接结束进程；<code>ContentProvider not responding</code> 来自调用方打开的检测</td><td>2.5</td></tr><tr><td>trace 里主线程空闲就说明没问题</td><td>只说明 dump 那一刻空闲，判定和 dump 之间有时间差</td><td>5.1、5.3</td></tr><tr><td>所有进程的栈是同一时刻的</td><td>各进程依次 dump，先后差一到两秒，整份有 20 秒预算</td><td>3</td></tr><tr><td>DropBox 里没有就是没发生</td><td>tag 可能被关，记录可能被限流</td><td>4</td></tr></tbody></table></div>
+<div data-block="213" class="table-wrap"><table><caption>关于 ANR 的十个常见误解</caption><thead><tr><th>说法</th><th>实际情况</th><th>详见</th></tr></thead><tbody><tr><td>主线程卡 5 秒就一定 ANR</td><td>只在有一个输入事件正等着被处理时成立；没有事件时卡多久都不触发输入 ANR</td><td>2.1</td></tr><tr><td><code>startService()</code> 之后不 <code>stopSelf()</code> 会 ANR</td><td>20 秒计的是一次回调从派发到返回，和之后是否停止无关</td><td>2.2</td></tr><tr><td><code>onCreate()</code> 慢会 ANR</td><td>AOSP 没有生命周期定时器；Android 15 起另有 15 秒的进程启动期限</td><td>2.6</td></tr><tr><td>发生 ANR 进程就没了</td><td>弹窗之后进程还活着，点“等待”就继续运行</td><td>3</td></tr><tr><td>后台进程不会 ANR</td><td>会，只是不弹窗，直接被结束</td><td>3</td></tr><tr><td>debug 包的输入超时是 60 秒</td><td>60 秒只给 instrumentation 和 wrapper；被调试器附加的进程不判 ANR</td><td>2.7</td></tr><tr><td>Provider 没按时发布会报 ANR</td><td>会被直接结束进程；<code>ContentProvider not responding</code> 来自调用方打开的检测</td><td>2.5</td></tr><tr><td>trace 里主线程空闲就说明没问题</td><td>只说明 dump 那一刻空闲，判定和 dump 之间有时间差</td><td>5.1、5.3</td></tr><tr><td>所有进程的栈是同一时刻的</td><td>各进程依次 dump，先后差一到两秒，整份有 20 秒预算</td><td>3</td></tr><tr><td>DropBox 里没有就是没发生</td><td>tag 可能被关，记录可能被限流</td><td>4</td></tr></tbody></table></div>
 
-<h2 id="9">
+<h2 data-block="214" id="9">
               9. 回到那张工单
               <a class="anchor" href="#9">链接到此标题</a>
             </h2>
 
-<p>ANR 的分析，难点从来不在拿到栈之后，而在拿到栈之前：你得先知道这份栈对应的是哪一段时间。Reason 把这段时间的终点和长度都写明了，顺着它把起点找出来，栈才有意义。</p>
+<p data-block="215">ANR 的分析，难点从来不在拿到栈之后，而在拿到栈之前：你得先知道这份栈对应的是哪一段时间。Reason 把这段时间的终点和长度都写明了，顺着它把起点找出来，栈才有意义。</p>
 
-<p>所以下一次再遇到一份“主线程空闲”的 trace，先别急着关工单。把 Reason 里的毫秒数当成时间窗的长度，到这段时间里的日志和别的线程里去找。开头那张工单，就是这样找到那次 5 秒多的同步请求的。</p>
+<p data-block="216">所以下一次再遇到一份“主线程空闲”的 trace，先别急着关工单。把 Reason 里的毫秒数当成时间窗的长度，到这段时间里的日志和别的线程里去找。开头那张工单，就是这样找到那次 5 秒多的同步请求的。</p>
 
-<h2 id="section-29">
+<h2 data-block="217" id="section-29">
               附：版本速查
               <a class="anchor" href="#section-29">链接到此标题</a>
             </h2>
 
-<div class="table-wrap"><table><caption>已核对的版本差异</caption><thead><tr><th>行为</th><th>版本</th><th>说明</th></tr></thead><tbody><tr><td>输入 Reason 的写法 <code>… is not responding. Waited …</code></td><td>11 到 16 相同</td><td>六个版本的 <code>InputDispatcher.cpp</code> 都看过；更早的没有核对</td></tr><tr><td><code>startForegroundService()</code> 的超时走 ANR 路径，30 秒加 10 秒</td><td>Android 13 起</td><td>11、12 里只有崩溃路径</td></tr><tr><td>对当事进程做预 dump</td><td>Android 14 起</td><td>12、13 没有</td></tr><tr><td>广播的软、硬两段超时</td><td>Android 14 起</td><td>13 没有；15 起改由 <code>AnrTimer</code> 计时</td></tr><tr><td>进程启动期限，15 秒</td><td>Android 15 起</td><td>14 没有，15 和 16 有</td></tr><tr><td>判定之后的主体流程</td><td>15 和 16 相同</td><td>对应的源文件只差几行 import 和内存头的内部表示</td></tr></tbody></table></div>
+<div data-block="218" class="table-wrap"><table><caption>已核对的版本差异</caption><thead><tr><th>行为</th><th>版本</th><th>说明</th></tr></thead><tbody><tr><td>输入 Reason 的写法 <code>… is not responding. Waited …</code></td><td>11 到 16 相同</td><td>六个版本的 <code>InputDispatcher.cpp</code> 都看过；更早的没有核对</td></tr><tr><td><code>startForegroundService()</code> 的超时走 ANR 路径，30 秒加 10 秒</td><td>Android 13 起</td><td>11、12 里只有崩溃路径</td></tr><tr><td>对当事进程做预 dump</td><td>Android 14 起</td><td>12、13 没有</td></tr><tr><td>广播的软、硬两段超时</td><td>Android 14 起</td><td>13 没有；15 起改由 <code>AnrTimer</code> 计时</td></tr><tr><td>进程启动期限，15 秒</td><td>Android 15 起</td><td>14 没有，15 和 16 有</td></tr><tr><td>判定之后的主体流程</td><td>15 和 16 相同</td><td>对应的源文件只差几行 import 和内存头的内部表示</td></tr></tbody></table></div>
 
-<p>表里“X 起”的意思是：我在 X 这个版本的源码里见到了对应的代码，在它的前一个版本里没有见到。没有列在表里的行为，只按 Android 15 核对过。</p>
+<p data-block="219">表里“X 起”的意思是：我在 X 这个版本的源码里见到了对应的代码，在它的前一个版本里没有见到。没有列在表里的行为，只按 Android 15 核对过。</p>
 
-<h2 id="section-30">
+<h2 data-block="220" id="section-30">
               参考资料
               <a class="anchor" href="#section-30">链接到此标题</a>
             </h2>
 
-<p>源码链接都指向 <code>android-15.0.0_r1</code> 这个 tag，行号以它为准。</p>
+<p data-block="221">源码链接都指向 <code>android-15.0.0_r1</code> 这个 tag，行号以它为准。</p>
 
-<ul><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java">ActiveServices.java</a>：Service 回调计时，<code>startForegroundService()</code> 的期限</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java">BroadcastQueueModernImpl.java</a>：广播的派发与软、硬超时</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java">ContentProviderHelper.java</a>：Provider 的发布期限和 <code>appNotRespondingViaProvider()</code></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/content/ContentProviderClient.java">ContentProviderClient.java</a>：调用方的无响应检测 <code>setDetectNotResponding()</code></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java">AnrHelper.java</a>：ANR 的汇合、去重和预 dump</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java">ProcessErrorStateRecord.java</a>：判定之后的主体流程，静默 ANR 的判断</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java">StackTracesDumpHelper.java</a>：trace 文件的命名、顺序和 20 秒预算</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java">ActivityManagerService.java</a>：输入超时入口，进程启动期限，DropBox</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java">TimeoutRecord.java</a>：各种 Reason 字符串的出处</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ActivityThread.java">ActivityThread.java</a>：应用侧何时报告 Service 完成，<code>QueuedWork.waitToFinish()</code> 的调用点，等待 Provider 时的阻塞位置</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/view/ViewRootImpl.java">ViewRootImpl.java</a>：输入事件走完哪些阶段才算 finish</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/content/ContentResolver.java">ContentResolver.java</a>：Provider 的几个超时常量</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ApplicationExitInfo.java">ApplicationExitInfo.java</a>：<code>REASON_ANR</code> 和 <code>getTraceInputStream()</code> 的说明</li><li><a href="https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp">InputDispatcher.cpp</a> 与 <a href="https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/inputflinger/dispatcher/AnrTracker.h">AnrTracker.h</a>：输入超时的登记与判定</li><li><a href="https://developer.android.com/topic/performance/vitals/ANR">Android 官方：应用无响应（ANR）</a>：官方的概览，和本文的口径有出入时以源码为准</li></ul>
+<ul data-block="222"><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java">ActiveServices.java</a>：Service 回调计时，<code>startForegroundService()</code> 的期限</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java">BroadcastQueueModernImpl.java</a>：广播的派发与软、硬超时</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java">ContentProviderHelper.java</a>：Provider 的发布期限和 <code>appNotRespondingViaProvider()</code></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/content/ContentProviderClient.java">ContentProviderClient.java</a>：调用方的无响应检测 <code>setDetectNotResponding()</code></li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java">AnrHelper.java</a>：ANR 的汇合、去重和预 dump</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java">ProcessErrorStateRecord.java</a>：判定之后的主体流程，静默 ANR 的判断</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java">StackTracesDumpHelper.java</a>：trace 文件的命名、顺序和 20 秒预算</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java">ActivityManagerService.java</a>：输入超时入口，进程启动期限，DropBox</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java">TimeoutRecord.java</a>：各种 Reason 字符串的出处</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ActivityThread.java">ActivityThread.java</a>：应用侧何时报告 Service 完成，<code>QueuedWork.waitToFinish()</code> 的调用点，等待 Provider 时的阻塞位置</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/view/ViewRootImpl.java">ViewRootImpl.java</a>：输入事件走完哪些阶段才算 finish</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/content/ContentResolver.java">ContentResolver.java</a>：Provider 的几个超时常量</li><li><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/core/java/android/app/ApplicationExitInfo.java">ApplicationExitInfo.java</a>：<code>REASON_ANR</code> 和 <code>getTraceInputStream()</code> 的说明</li><li><a href="https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp">InputDispatcher.cpp</a> 与 <a href="https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/inputflinger/dispatcher/AnrTracker.h">AnrTracker.h</a>：输入超时的登记与判定</li><li><a href="https://developer.android.com/topic/performance/vitals/ANR">Android 官方：应用无响应（ANR）</a>：官方的概览，和本文的口径有出入时以源码为准</li></ul>
 
             <div class="post-end">
               <span class="avatar" aria-hidden="true">🌤️</span>
@@ -1136,5 +1136,6 @@
     </script>
       <script src="/search.js?v=27b032ce" defer></script>
     <script src="/lightbox.js?v=024c90e7" defer></script>
+    <script src="/notes.js?v=3c4ca578" defer></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-slug="typography-experiment">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,7 +27,7 @@
     <meta property="og:url" content="https://draft.run/posts/typography-experiment" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
-    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=f0912034" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=697d8b7f" />
   </head>
 
   <body>
@@ -96,16 +96,16 @@
       <div class="wrap post-layout">
         <div class="post-main">
           <article class="prose">
-            <p>每个技术博客的第一篇都有个标准开法：写一段 Hello World，再解释一下为什么终于决定开始写。我不打算写那个。一个博客最难的部分从来不是内容，是<strong>排版</strong>——内容你总有一天会写完，排版却要在每一篇文章里反复兑现。</p>
+            <p data-block="0">每个技术博客的第一篇都有个标准开法：写一段 Hello World，再解释一下为什么终于决定开始写。我不打算写那个。一个博客最难的部分从来不是内容，是<strong>排版</strong>——内容你总有一天会写完，排版却要在每一篇文章里反复兑现。</p>
 
-<h2 id="measure">
+<h2 data-block="1" id="measure">
               行宽是被眼睛决定的
               <a class="anchor" href="#measure">链接到此标题</a>
             </h2>
 
-<p>阅读时眼睛不是匀速扫过去的，而是一次抓四五个字，跳到下一个落点，读完行尾再回扫到下一行开头。行越长，回扫距离越大，越容易串行。这不是审美偏好，是生理限制——Bringhurst 给的经典区间是英文 45–75 个字符，中文换成 30–40 字。</p>
+<p data-block="2">阅读时眼睛不是匀速扫过去的，而是一次抓四五个字，跳到下一个落点，读完行尾再回扫到下一行开头。行越长，回扫距离越大，越容易串行。这不是审美偏好，是生理限制——Bringhurst 给的经典区间是英文 45–75 个字符，中文换成 30–40 字。</p>
 
-<div class="demo" data-demo>
+<div data-block="3" class="demo" data-demo>
               <div class="demo__bar">
                 每行字数：<b data-out>34</b> 字 · 拖动下面的滑块试试
               </div>
@@ -119,18 +119,18 @@
               </div>
             </div>
 
-<p>把滑块推到 50 以上，你会开始“读丢”——不是读不懂，是眼睛找不到下一行的开头。这就是为什么把正文铺满 4K 显示器是个坏主意。</p>
+<p data-block="4">把滑块推到 50 以上，你会开始“读丢”——不是读不懂，是眼睛找不到下一行的开头。这就是为什么把正文铺满 4K 显示器是个坏主意。</p>
 
-<blockquote><p>Typography is the craft of endowing human language with a durable visual form.</p><p>— Robert Bringhurst</p></blockquote>
+<blockquote data-block="5"><p>Typography is the craft of endowing human language with a durable visual form.</p><p>— Robert Bringhurst</p></blockquote>
 
-<h2 id="code">
+<h2 data-block="6" id="code">
               代码块不是插图
               <a class="anchor" href="#code">链接到此标题</a>
             </h2>
 
-<p>技术博客的代码块是正文的一部分。读者常常跳过解释、直接从代码开始读，所以它得能站住：有文件名、有语言、能一键复制。</p>
+<p data-block="7">技术博客的代码块是正文的一部分。读者常常跳过解释、直接从代码开始读，所以它得能站住：有文件名、有语言、能一键复制。</p>
 
-<div class="code">
+<div data-block="8" class="code">
               <div class="code__bar">
                 <span class="code__file">css/tokens.css</span>
                 <span class="code__lang">CSS</span>
@@ -150,7 +150,7 @@
 <span class="line">}</span></code></pre>
             </div>
 
-<div class="callout callout--warn">
+<div data-block="9" class="callout callout--warn">
               <span class="callout__badge" aria-hidden="true">⚠️</span>
               <p>
                 <strong>长行：滚动还是换行？</strong>
@@ -159,16 +159,16 @@
               </p>
             </div>
 
-<h2 id="cards">
+<h2 data-block="10" id="cards">
               卡片的三种语气
               <a class="anchor" href="#cards">链接到此标题</a>
             </h2>
 
-<p>同一段话，用不同颜色的框包起来，读者对它的信任程度会不一样。这是有用的，也是危险的——如果一篇里出现三个以上，语气就贬值了。</p>
+<p data-block="11">同一段话，用不同颜色的框包起来，读者对它的信任程度会不一样。这是有用的，也是危险的——如果一篇里出现三个以上，语气就贬值了。</p>
 
-<div class="table-wrap"><table><caption>元素的使用条件</caption><thead><tr><th>元素</th><th>什么时候用</th><th>什么时候别用</th></tr></thead><tbody><tr><td>代码块</td><td>有可复制的实现</td><td>只有一行命令</td></tr><tr><td>卡片</td><td>三条以上并列信息</td><td>只有一条</td></tr><tr><td>交互</td><td>参数变化会改变结论</td><td>结论是固定的</td></tr></tbody></table></div>
+<div data-block="12" class="table-wrap"><table><caption>元素的使用条件</caption><thead><tr><th>元素</th><th>什么时候用</th><th>什么时候别用</th></tr></thead><tbody><tr><td>代码块</td><td>有可复制的实现</td><td>只有一行命令</td></tr><tr><td>卡片</td><td>三条以上并列信息</td><td>只有一条</td></tr><tr><td>交互</td><td>参数变化会改变结论</td><td>结论是固定的</td></tr></tbody></table></div>
 
-<p>这张表还没写完。写到第十篇的时候，我大概会想删掉其中的一半——那说明它起作用了。</p>
+<p data-block="13">这张表还没写完。写到第十篇的时候，我大概会想删掉其中的一半——那说明它起作用了。</p>
 
             <div class="post-end">
               <span class="avatar" aria-hidden="true">🌤️</span>
@@ -321,5 +321,6 @@
     </script>
       <script src="/search.js?v=27b032ce" defer></script>
     <script src="/lightbox.js?v=024c90e7" defer></script>
+    <script src="/notes.js?v=3c4ca578" defer></script>
   </body>
 </html>

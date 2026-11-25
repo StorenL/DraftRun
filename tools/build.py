@@ -333,7 +333,13 @@ def md_to_html(body: str):
             i += 1
         blocks.append(f"<p>{inline(' '.join(buf))}</p>")
 
-    cleaned = [b[1] if isinstance(b, tuple) else b for b in blocks if not isinstance(b, tuple)]
+    # 给每个顶层块打上序号，批注靠它定位。序号 = 块在正文里的顺序
+    cleaned = []
+    for b in blocks:
+        if isinstance(b, tuple):
+            continue
+        idx = len(cleaned)
+        cleaned.append(re.sub(r"^(<[a-zA-Z][\w-]*)", rf'\1 data-block="{idx}"', b, count=1))
     return "\n\n".join(cleaned), toc
 
 
@@ -360,6 +366,7 @@ def render_post(meta, body_html, toc):
     return (
         tpl.replace("{{TITLE}}", html.escape(title))
         .replace("{{DESC}}", html.escape(dek))
+        .replace("{{SLUG}}", slug)
         .replace("{{CANONICAL}}", url)
         .replace("{{KICKER}}", html.escape(meta.get("tag", "笔记")))
         .replace("{{DEK}}", inline(dek))
@@ -741,7 +748,7 @@ def stamp_assets():
     页面结构在但样式不生效。
     """
     versions = {}
-    for name in ("style.css", "search.js", "lightbox.js"):
+    for name in ("style.css", "search.js", "lightbox.js", "notes.js"):
         f = STATIC / name
         if f.exists():
             versions[name] = hashlib.md5(f.read_bytes()).hexdigest()[:8]
