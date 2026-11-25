@@ -1,0 +1,10 @@
+# 本地开发用的密钥，绝不提交
+.dev.vars
+
+# wrangler 本地状态（D1 的本地 sqlite 在这里）
+.wrangler/
+.tmp/
+
+# 系统垃圾
+.DS_Store
+Thumbs.db

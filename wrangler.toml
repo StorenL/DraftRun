@@ -1,7 +1,18 @@
 name = "draftrun"
 compatibility_date = "2026-11-22"
 
+# 批注接口：只有 /api/* 进 Worker，其余请求仍由静态资源直接返回
+main = "worker/index.js"
+
 # 只把 public/ 当静态资源发布，仓库里的文档和配置不会被公开
 [assets]
 directory = "./public"
+binding = "ASSETS"
 not_found_handling = "404-page"
+run_worker_first = ["/api/*"]
+
+# 批注存储。database_id 在 wrangler d1 create 之后填真实值
+[[d1_databases]]
+binding = "DB"
+database_name = "draftrun-notes"
+database_id = "aaca1bc7-8151-47ac-9ac6-5825c953e6b4"
