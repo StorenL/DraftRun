@@ -1528,29 +1528,56 @@ a {
 /* 标题栏的玻璃层已由 .header.is-solid 自己的 backdrop-filter 承担，
    这里不再额外铺一层向下 100px 的虚化——它会把正文糊掉。 */
 
-/* 页脚底栏：左边版权，右边一句说明 */
+/* 页脚底栏：版权 / 导航 / 一句古诗，三段撑开整条带子 */
 .footer__bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px 24px;
+  gap: 16px 40px;
 }
-.footer__note {
+.footer__copy {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
-  opacity: 0.9;
+  white-space: nowrap;
 }
-.footer__note a {
+.footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 26px;
+  font-size: 14px;
+}
+.footer__nav a {
   color: var(--muted);
   text-decoration: none;
-  border-bottom: 1px solid var(--line-2);
-  transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+  transition: color 0.2s var(--ease-out);
 }
-.footer__note a:hover {
-  color: var(--link);
-  border-bottom-color: currentColor;
+.footer__nav a:hover {
+  color: var(--ink);
+}
+.footer__sign {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .footer__bar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+  .footer__nav {
+    order: 2;
+  }
+  .footer__sign {
+    order: 3;
+    font-size: 16px;
+  }
 }
 /* ==========================================================================
    涂鸦的呼吸：这三组 keyframes 之前随大段 CSS 一起被误删了，
