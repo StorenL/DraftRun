@@ -288,8 +288,7 @@ a {
   line-height: 1;
   letter-spacing: 0.06em;
   color: var(--ink);
-  transform: rotate(-2.2deg);
-  transition: transform 0.35s var(--ease);
+  transition: color 0.2s var(--ease-out);
 }
 .brand:hover {
   color: var(--link);
@@ -694,6 +693,16 @@ a {
 .trail__ghost:nth-child(4) {
   left: 42px;
 }
+/* 延迟写在基础态，出场和退场都按左→右的顺序，退场不再是倒着消失 */
+.trail__ghost:nth-child(2) {
+  transition-delay: 0s;
+}
+.trail__ghost:nth-child(3) {
+  transition-delay: 0.05s;
+}
+.trail__ghost:nth-child(4) {
+  transition-delay: 0.1s;
+}
 .readmore:hover .trail__lead {
   color: var(--link);
 }
@@ -704,12 +713,10 @@ a {
 .readmore:hover .trail__ghost:nth-child(3) {
   opacity: 0.38;
   transform: translateX(4px);
-  transition-delay: 0.03s;
 }
 .readmore:hover .trail__ghost:nth-child(4) {
   opacity: 0.18;
   transform: translateX(6px);
-  transition-delay: 0.06s;
 }
 
 /* 侧栏 */
