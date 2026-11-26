@@ -106,6 +106,32 @@ Cloudflare Workers + Static Assets，从 GitHub 自动构建。
 
 域名 `draft.run` 托管在 Cloudflare，Worker 里绑 Custom Domain。
 
+## 自动构建坏了怎么办
+
+2026-11-27 起，Cloudflare 的自动构建一直失败，日志里是：
+
+```
+Build failed: Your build is configured with a build token that belongs to a
+user who has left your organization. This token is no longer valid and cannot
+be managed by other members.
+```
+
+修法（Dashboard）：**Worker → draftrun → Settings → Builds → API token**，
+重新选一个或新建一个 build token，然后重试构建。
+
+在修好之前，用本地部署兜底：
+
+```powershell
+cd deploy
+python tools/build.py
+node "C:\Users\18720\Documents\AiWork\Blog\.tools\node_modules\wrangler\bin\wrangler.js" deploy
+```
+
+wrangler 装在仓库外（`.tools/`），登录状态存在用户目录，长期有效；
+失效就重新 `wrangler login`（授权码只有 2 分钟，浏览器要立刻点）。
+
+本地部署约 15 秒，比自动构建（约 2 分钟）还快。
+
 ## 注意
 
 **缓存**：`_headers` 里 CSS 是 10 分钟 + `stale-while-revalidate`。改样式最多 10 分钟生效，不用改文件名。
