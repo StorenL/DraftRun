@@ -258,7 +258,9 @@ a {
   transition: background 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
 }
 .header.is-solid {
-  /* 只在栏内淡入，底边留一条很窄的渐隐，避免生硬的横切 */
+  /* 只在栏内淡入，底边留一条很窄的渐隐，避免生硬的横切。
+     模糊范围就是这个盒子的高度（88px）——不要再往下面加伪元素，
+     否则正文会被一起糊掉。 */
   background: linear-gradient(
     to top,
     transparent 0%,
