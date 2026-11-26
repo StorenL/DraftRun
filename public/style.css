@@ -314,15 +314,17 @@ a {
 .nav a::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: -2px;
+  right: -2px;
   bottom: -5px;
   height: 2px;
   background: var(--link);
   border-radius: 2px;
   transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.32s var(--ease);
+  /* 与首页标题同一套：从鼠标进入点向两侧展开，不用带回弹的曲线 */
+  transform-origin: var(--ox, 50%) 50%;
+  transition: transform 0.42s var(--ease-out);
+  pointer-events: none;
 }
 .nav a:hover::after {
   transform: scaleX(1);
@@ -1830,17 +1832,30 @@ html.is-swapping .promo {
 }
 
 .archive__name {
+  position: relative;
+  display: inline-block;
+  /* grid 子项默认 stretch，会撑满整列，下划线就横跨整行了 */
+  justify-self: start;
   font-size: 19px;
   font-weight: 500;
   line-height: 1.4;
-  background-image: linear-gradient(var(--link), var(--link));
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 0 2px;
-  transition: background-size 0.35s var(--ease);
 }
-.archive__row a:hover .archive__name {
-  background-size: 100% 2px;
+.archive__name::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--link);
+  transform: scaleX(0);
+  transform-origin: var(--ox, 50%) 50%;
+  transition: transform 0.42s var(--ease-out);
+  pointer-events: none;
+}
+.archive__row a:hover .archive__name::after {
+  transform: scaleX(1);
 }
 .archive__tag {
   font-size: 13px;

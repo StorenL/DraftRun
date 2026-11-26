@@ -748,7 +748,7 @@ def stamp_assets():
     页面结构在但样式不生效。
     """
     versions = {}
-    for name in ("style.css", "search.js", "lightbox.js", "notes.js"):
+    for name in ("style.css", "search.js", "lightbox.js", "notes.js", "underline.js"):
         f = STATIC / name
         if f.exists():
             versions[name] = hashlib.md5(f.read_bytes()).hexdigest()[:8]

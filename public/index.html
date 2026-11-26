@@ -30,7 +30,7 @@
     <meta property="og:url" content="https://draft.run/" />
     <meta property="og:locale" content="zh_CN" />
     <meta name="twitter:card" content="summary" />
-    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=697d8b7f" />
+    <link rel="alternate" type="application/rss+xml" title="潦草地" href="https://draft.run/rss.xml" />    <link rel="stylesheet" href="/style.css?v=b20633ae" />
   </head>
 
   <body>
@@ -403,16 +403,7 @@
         }
       })();
     </script>
-    <script>
-    // 标题下划线从鼠标进入点向两侧展开
-    document.querySelectorAll(".post-item h3 a").forEach(function (a) {
-      a.addEventListener("pointerenter", function (e) {
-        var r = a.getBoundingClientRect();
-        var ox = ((e.clientX - r.left) / r.width) * 100;
-        a.style.setProperty("--ox", Math.max(0, Math.min(100, ox)) + "%");
-      });
-    });
-  </script>  <script>
+  <script>
     // 箭头"弹一下"：两段弹簧，但第二段从"当前实时值"起飞，
     // 而不是从预设的终点重来——这是 Motion 的做法，也是连贯感的关键。
     (function () {
@@ -465,5 +456,6 @@
       );
     })();
   </script>    <script src="/search.js?v=27b032ce" defer></script>
+    <script src="/underline.js?v=f7ae6ff3" defer></script>
   </body>
 </html>
