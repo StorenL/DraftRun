@@ -2156,19 +2156,33 @@ html.is-lightboxed {
    批注
    ========================================================================== */
 .note-mark {
-  padding: 0.05em 0.12em;
-  border-radius: 3px;
-  background: var(--note-private);
-  box-shadow: inset 0 -1px 0 var(--note-private-line);
+  /* 手绘波浪下划线：横向平铺的 SVG，多行选区每行都会画一条 */
+  padding: 0 0.06em 0.14em;
+  background: none;
+  box-shadow: none;
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23D69E00'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: 10px 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
   cursor: pointer;
   color: inherit;
 }
 .note-mark--public {
-  background: var(--note-public);
-  box-shadow: inset 0 -1px 0 var(--note-public-line);
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%235B6BF5'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
 }
 .note-mark--applied {
-  opacity: 0.55;
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23B4B9C6'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+}
+:root[data-theme="dark"] .note-mark {
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23FFD666'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+}
+:root[data-theme="dark"] .note-mark--public {
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%238FA6FF'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+}
+:root[data-theme="dark"] .note-mark--applied {
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%236B7280'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
 }
 :root {
   --note-private: rgba(255, 214, 102, 0.35);
