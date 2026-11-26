@@ -258,10 +258,11 @@ a {
   transition: background 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
 }
 .header.is-solid {
+  /* 只在栏内淡入，底边留一条很窄的渐隐，避免生硬的横切 */
   background: linear-gradient(
     to top,
     transparent 0%,
-    var(--header-bg) 82%
+    var(--header-bg) 22%
   );
   -webkit-backdrop-filter: blur(10px) saturate(140%);
   backdrop-filter: blur(10px) saturate(140%);
@@ -1515,39 +1516,8 @@ a {
 }
 
 /* 头部下方 100px 的毛玻璃：蒙版让它渐隐，正文在这里被糊掉而不是直接透出来 */
-.header::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -100px 0;
-  background: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0,
-    #000 calc(100% - 100px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0,
-    #000 calc(100% - 100px),
-    transparent 100%
-  );
-  pointer-events: none;
-  opacity: 0;
-  /* 沉到内容之下：只糊背景，不盖住 logo 和图标 */
-  z-index: -1;
-  transition: opacity 0.4s var(--ease-out);
-}
-.header.is-solid::before {
-  opacity: 1;
-}
-
-/* 暗色下这层玻璃是深色 */
-:root[data-theme="dark"] .header::before {
-  background: rgba(13, 15, 18, 0.72);
-}
+/* 标题栏的玻璃层已由 .header.is-solid 自己的 backdrop-filter 承担，
+   这里不再额外铺一层向下 100px 的虚化——它会把正文糊掉。 */
 
 /* 页脚底栏：左边版权，右边一句说明 */
 .footer__bar {
