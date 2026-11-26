@@ -118,7 +118,7 @@
               <p>
                 大多会是 Android，偶尔也写点别的。希望它能见证自己的成长。 🌱
               </p>
-              <a class="promo__btn" href="/posts/android-kotlin-coroutines">
+              <a class="promo__btn" href="/posts/android-pluginization">
                 最近一篇
                 <span aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -185,6 +185,20 @@
           <div id="writing">
             <h2 class="label">Articles and tutorials</h2>
 
+            <article class="post-item">
+              <h3><a href="/posts/android-pluginization">同一个进程，两个 APK：Android 插件化技术全景</a></h3>
+              <p class="post-item__sub">ClassLoader、资源与组件代理</p>
+              <p class="post-item__excerpt">一个活动页在安装包里找不到：它被压成 zip 放在 CDN 上，用户点进去才下载、校验、加载。系统始终只认识宿主一个 APK，插件的身份全部由宿主借用。文中按类加载、资源、组件代理三条线拆开这套技术。</p>
+              <a class="readmore" href="/posts/android-pluginization">
+                Read more
+                <span class="trail" aria-hidden="true">
+                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
+                </span>
+              </a>
+            </article>
             <article class="post-item">
               <h3><a href="/posts/android-kotlin-coroutines">让出去，再回来：在 Android 开发里用好 Kotlin 协程</a></h3>
               <p class="post-item__sub">挂起、作用域与取消的边界</p>
@@ -255,23 +269,9 @@
                 </span>
               </a>
             </article>
-            <article class="post-item">
-              <h3><a href="/posts/android-binder-ipc">一次跨进程调用有多远：Android Binder 进程通信机制</a></h3>
-              <p class="post-item__sub">从 Java 调用到内核事务队列的完整链路</p>
-              <p class="post-item__excerpt">主线程卡在 getPackageInfo 上 2.3 秒。这一行只发了一次跨进程请求，时间花在它下面看不见的几层：Parcel 打包、ioctl 陷入内核、binder 线程排队、锁竞争，再沿原路回来。</p>
-              <a class="readmore" href="/posts/android-binder-ipc">
-                Read more
-                <span class="trail" aria-hidden="true">
-                  <svg class="trail__lead" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h14M11 3l6 6-6 6"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                  <svg class="trail__ghost" viewBox="0 0 11 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l5.5 6L3 15"/></svg>
-                </span>
-              </a>
-            </article>
             <div class="showmore-wrap">
               <a class="showmore" href="/archive">
-                全部 9 篇
+                全部 10 篇
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" />
                 </svg>
@@ -290,6 +290,12 @@
             <section>
               <h2 class="label">Popular content</h2>
               <ul class="popular"><li>
+                  <a href="/posts/android-pluginization">
+                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
+                    <span>同一个进程，两个 APK：Android 插件化技术全景</span>
+                  </a>
+                </li>
+                <li>
                   <a href="/posts/android-kotlin-coroutines">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>让出去，再回来：在 Android 开发里用好 Kotlin 协程</span>
@@ -311,12 +317,6 @@
                   <a href="/posts/android-custom-widgets">
                     <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
                     <span>从 onMeasure 到 MeasurePolicy：Android 自定义控件的两条路</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="/posts/android-temp-root">
-                    <span class="arrow-grow" aria-hidden="true"><svg viewBox="0 0 22 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line class="shaft" x1="1" y1="9" x2="13" y2="9" vector-effect="non-scaling-stroke" /><path class="head" d="M7.5 3L15 9l-7.5 6" /></svg></span>
-                    <span>一次开机内的 root：Android 临时 Root 的技术链路</span>
                   </a>
                 </li></ul>
             </section>

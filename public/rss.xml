@@ -5,8 +5,16 @@
     <link>https://draft.run/</link>
     <description>写在草稿纸上的技术笔记：Android、工具与写作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Wed, 25 Nov 2026 17:03:19 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 26 Nov 2026 15:19:25 +0000</lastBuildDate>
     <atom:link href="https://draft.run/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>同一个进程，两个 APK：Android 插件化技术全景</title>
+      <link>https://draft.run/posts/android-pluginization</link>
+      <guid isPermaLink="true">https://draft.run/posts/android-pluginization</guid>
+      <pubDate>Thu, 26 Nov 2026 09:00:00 +0000</pubDate>
+      <category>Android</category>
+      <description><![CDATA[<p>ClassLoader、资源与组件代理</p>]]></description>
+    </item>
     <item>
       <title>让出去，再回来：在 Android 开发里用好 Kotlin 协程</title>
       <link>https://draft.run/posts/android-kotlin-coroutines</link>
@@ -46,14 +54,6 @@
       <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
       <category>Android</category>
       <description><![CDATA[<p>不依赖 Bootloader 解锁的内核态提权</p>]]></description>
-    </item>
-    <item>
-      <title>一次跨进程调用有多远：Android Binder 进程通信机制</title>
-      <link>https://draft.run/posts/android-binder-ipc</link>
-      <guid isPermaLink="true">https://draft.run/posts/android-binder-ipc</guid>
-      <pubDate>Mon, 23 Nov 2026 09:00:00 +0000</pubDate>
-      <category>Android</category>
-      <description><![CDATA[<p>从 Java 调用到内核事务队列的完整链路</p>]]></description>
     </item>
   </channel>
 </rss>
