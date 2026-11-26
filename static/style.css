@@ -2183,33 +2183,34 @@ html.is-lightboxed {
    批注
    ========================================================================== */
 .note-mark {
-  /* 手绘波浪下划线：横向平铺的 SVG，多行选区每行都会画一条 */
-  padding: 0 0.06em 0.14em;
+  /* 手绘波浪下划线：横向平铺的 SVG，多行选区每行都会画一条。
+     不要加横向 padding——那会改变行内宽度，右边的内容会被挤动。 */
+  padding: 0 0 0.16em;
   background: none;
   box-shadow: none;
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23D69E00'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23C98A00'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
   background-repeat: repeat-x;
   background-position: left bottom;
-  background-size: 10px 4px;
+  background-size: 12px 6px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   cursor: pointer;
   color: inherit;
 }
 .note-mark--public {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%235B6BF5'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%235B6BF5'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
 }
 .note-mark--applied {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23B4B9C6'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23B4B9C6'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
 }
 :root[data-theme="dark"] .note-mark {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%23FFD666'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23FFD666'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
 }
 :root[data-theme="dark"] .note-mark--public {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%238FA6FF'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%238FA6FF'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
 }
 :root[data-theme="dark"] .note-mark--applied {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%208'><path%20d='M0%205q5-4%2010%200t10%200'%20fill='none'%20stroke='%236B7280'%20stroke-width='2'%20stroke-linecap='round'/></svg>");
+  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%236B7280'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
 }
 :root {
   --note-private: rgba(255, 214, 102, 0.35);
@@ -2259,12 +2260,29 @@ html.is-lightboxed {
   z-index: 130;
   display: flex;
   flex-direction: column;
-  width: min(400px, 92vw);
-  border-left: 1px solid var(--line-2);
-  background: var(--paper);
-  box-shadow: -12px 0 40px -20px rgba(10, 12, 16, 0.4);
+  width: min(420px, 92vw);
+  /* 液态玻璃：半透明底 + 大半径模糊 + 提高饱和，边线用白色低透明度提亮 */
+  border-left: 1px solid var(--glass-line);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    -24px 0 60px -28px rgba(10, 12, 16, 0.45),
+    inset 1px 0 0 var(--glass-hi);
   transform: translateX(102%);
   transition: transform 0.32s var(--ease);
+}
+:root {
+  --glass-bg: rgba(253, 251, 246, 0.66);
+  --glass-line: rgba(255, 255, 255, 0.55);
+  --glass-hi: rgba(255, 255, 255, 0.7);
+  --glass-card: rgba(255, 255, 255, 0.5);
+}
+:root[data-theme="dark"] {
+  --glass-bg: rgba(18, 21, 26, 0.62);
+  --glass-line: rgba(255, 255, 255, 0.12);
+  --glass-hi: rgba(255, 255, 255, 0.14);
+  --glass-card: rgba(255, 255, 255, 0.05);
 }
 .notes-drawer.is-open {
   transform: translateX(0);
@@ -2274,7 +2292,7 @@ html.is-lightboxed {
   align-items: center;
   gap: 10px;
   padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--glass-line);
 }
 .notes-drawer__head h2 {
   margin: 0;
@@ -2323,7 +2341,7 @@ html.is-lightboxed {
   justify-content: space-between;
   gap: 10px;
   padding: 12px 18px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--glass-line);
   font-size: 13px;
 }
 .notes-signout {
@@ -2350,8 +2368,11 @@ html.is-lightboxed {
 /* 批注卡片 */
 .note-card {
   padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 12px;
+  background: var(--glass-card);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .note-card + .note-card {
   margin-top: 10px;

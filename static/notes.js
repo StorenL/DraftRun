@@ -15,6 +15,7 @@
   var notes = [];
   var filter = "open";
   var pending = null; // 正在撰写的位置信息
+  var previewMark = null; // 撰写时给选区套的临时波浪线
 
   if (!SLUG || !document.querySelector(".prose")) return;
 
@@ -339,6 +340,19 @@
     toolbar.querySelector("button").addEventListener("click", openCompose);
   }
 
+  function clearPreview() {
+    if (!previewMark) return;
+    var parent = previewMark.parentNode;
+    if (!parent) {
+      previewMark = null;
+      return;
+    }
+    while (previewMark.firstChild) parent.insertBefore(previewMark.firstChild, previewMark);
+    parent.removeChild(previewMark);
+    parent.normalize();
+    previewMark = null;
+  }
+
   function openCompose() {
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed) return;
@@ -362,6 +376,18 @@
       suffix: blockText(block).slice(off.end, off.end + 30),
     };
 
+    // 先把选区本身标出来，弹框还没保存也能看到范围
+    clearPreview();
+    try {
+      var frag = range.extractContents();
+      previewMark = document.createElement("mark");
+      previewMark.className = "note-mark note-mark--private note-mark--pending";
+      previewMark.appendChild(frag);
+      range.insertNode(previewMark);
+    } catch (e) {
+      previewMark = null;
+    }
+
     if (!popover) {
       popover = document.createElement("div");
       popover.className = "notes-popover";
@@ -378,6 +404,7 @@
       document.body.appendChild(popover);
       popover.querySelector('[data-act="cancel"]').addEventListener("click", function () {
         popover.hidden = true;
+        clearPreview();
       });
       popover.querySelector('[data-act="save"]').addEventListener("click", saveCompose);
     }
@@ -407,6 +434,7 @@
       : "private";
     var payload = Object.assign({ slug: SLUG, body: body, visibility: visibility }, pending);
     popover.hidden = true;
+    clearPreview();
     api("", { method: "POST", body: payload }).then(function () {
       window.getSelection().removeAllRanges();
       refresh();
