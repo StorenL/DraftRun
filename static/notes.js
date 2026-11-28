@@ -353,6 +353,24 @@
     previewMark = null;
   }
 
+  // 选区端点落在行内代码中间时，扩展到整个 chip。
+  // 不这么做的话，extractContents 会把一个 <code> 拆成两个，
+  // 一个标识符看起来像两个。
+  function snapToChip(range) {
+    function ownerCode(node) {
+      var el = node.nodeType === 1 ? node : node.parentElement;
+      return el && el.closest ? el.closest("code") : null;
+    }
+    var startCode = ownerCode(range.startContainer);
+    if (startCode && startCode.contains(range.startContainer)) {
+      range.setStartBefore(startCode);
+    }
+    var endCode = ownerCode(range.endContainer);
+    if (endCode && endCode.contains(range.endContainer)) {
+      range.setEndAfter(endCode);
+    }
+  }
+
   function openCompose() {
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed) return;
@@ -363,6 +381,9 @@
       alert("批注只能选在同一段里");
       return;
     }
+    // 端点落在代码块中间就撑到整块，避免把一个标识符劈成两个 chip
+    snapToChip(range);
+
     var off = offsetsOfSelection(block, range);
     var quote = range.toString().trim();
     if (!quote) return;
