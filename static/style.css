@@ -2188,7 +2188,8 @@ html.is-lightboxed {
   padding: 0 0 0.16em;
   background: none;
   box-shadow: none;
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23e60067' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23e60067' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
   background-repeat: repeat-x;
   background-position: left bottom;
   background-size: 12px 6px;
@@ -2198,19 +2199,32 @@ html.is-lightboxed {
   color: inherit;
 }
 .note-mark--public {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23e60067' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23e60067' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
 }
+/* 行内代码的底色是实心的，会把 .note-mark 的波浪盖住。
+   在批注里把底色去掉，直接透出 mark 那条波浪——天然对齐，
+   代码块的样子用描边保留，不会和正文混在一起。 */
+.note-mark code {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
 .note-mark--applied {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%238E94A3' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%238E94A3' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
 }
 :root[data-theme="dark"] .note-mark {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23ff1981' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23ff1981' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
 }
 :root[data-theme="dark"] .note-mark--public {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23ff1981' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%23ff1981' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
 }
 :root[data-theme="dark"] .note-mark--applied {
-  background-image: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%238E94A3' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  --note-wave: url("data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2020%2010'><path%20d='M0%205.1C3.2%20.3%206.8%20.5%2010%205.1S16.6%209.9%2020%205.1'%20fill='none'%20stroke='%238E94A3' stroke-opacity='0.75'%20stroke-width='2.4'%20stroke-linecap='round'/></svg>");
+  background-image: var(--note-wave);
 }
 :root {
   --note-private: rgba(255, 214, 102, 0.35);
